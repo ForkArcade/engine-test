@@ -1,4 +1,15 @@
 {
   "template": "roguelike",
-  "gameFiles": ["data.js", "game.js", "render.js", "main.js"]
+  "gameFiles": [
+    "data.js",
+    "game.js",
+    "render.js",
+    "main.js"
+  ],
+  "slug": "engine-test",
+  "title": "Engine Test",
+  "currentVersion": 0,
+  "versions": [],
+  "sdkVersion": 1,
+  "engineVersion": 1
 }
