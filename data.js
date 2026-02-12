@@ -13,7 +13,7 @@
   FA.register('config', 'colors', {
     bg: '#0d0b1a', wall: '#1e1638', floor: '#201c3a',
     player: '#4ef', enemy: '#f66', gold: '#fd4', potion: '#4f4',
-    text: '#ddd', dim: '#777'
+    text: '#ddd', dim: '#777', narrative: '#c8b4ff'
   });
 
   FA.register('config', 'scoring', {
@@ -58,21 +58,53 @@
 
   // === NARRATIVE ===
   FA.register('config', 'narrative', {
-    startNode: 'start',
+    startNode: 'entrance',
     variables: { rats_killed: 0, gold_found: 0 },
     graph: {
       nodes: [
-        { id: 'start', label: 'Wejscie do lochu', type: 'scene' },
+        { id: 'entrance', label: 'Wejscie do lochu', type: 'scene' },
         { id: 'exploring', label: 'Eksploracja', type: 'scene' },
+        { id: 'first_blood', label: 'Pierwsza krew', type: 'scene' },
+        { id: 'hunter', label: 'Lowca szczurow', type: 'scene' },
         { id: 'victory', label: 'Zwyciestwo', type: 'scene' },
-        { id: 'death', label: 'Smierc', type: 'scene' }
+        { id: 'death', label: 'Smierc bohatera', type: 'scene' }
       ],
       edges: [
-        { from: 'start', to: 'exploring' },
-        { from: 'exploring', to: 'victory' },
-        { from: 'exploring', to: 'death' }
+        { from: 'entrance', to: 'exploring' },
+        { from: 'exploring', to: 'first_blood' },
+        { from: 'first_blood', to: 'hunter' },
+        { from: 'hunter', to: 'victory' },
+        { from: 'exploring', to: 'death' },
+        { from: 'first_blood', to: 'death' },
+        { from: 'hunter', to: 'death' }
       ]
     }
+  });
+
+  // === NARRATIVE MESSAGES (shown in-game) ===
+  FA.register('narrativeText', 'entrance', {
+    text: 'Zimny podmuch wiatru uderza w twoja twarz. Wchodzisz do ciemnego lochu...',
+    color: '#c8b4ff'
+  });
+  FA.register('narrativeText', 'exploring', {
+    text: 'Slyszysz pisk szczurow w ciemnosci. Sa wszedzie.',
+    color: '#c8b4ff'
+  });
+  FA.register('narrativeText', 'first_blood', {
+    text: 'Pierwszy szczur pada. Pozostale staja sie bardziej agresywne!',
+    color: '#ffa'
+  });
+  FA.register('narrativeText', 'hunter', {
+    text: 'Jestes lowca. Szczury uciekaja przed toba, ale nie maja dokad.',
+    color: '#ffa'
+  });
+  FA.register('narrativeText', 'victory', {
+    text: 'Cisza. Loch jest twoj. Zloto blyszczy w mroku.',
+    color: '#4f4'
+  });
+  FA.register('narrativeText', 'death', {
+    text: 'Ciemnosc pochlanla cie. Loch pochlonil kolejnego smialka...',
+    color: '#f44'
   });
 
 })();

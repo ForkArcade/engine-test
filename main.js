@@ -1,5 +1,4 @@
 // Roguelike — Entry Point
-// Keybindings, event wiring, game loop, ForkArcade integration
 (function() {
   'use strict';
   var FA = window.FA;
@@ -14,12 +13,26 @@
   FA.bindKey('left',  ['ArrowLeft',  'a']);
   FA.bindKey('right', ['ArrowRight', 'd']);
   FA.bindKey('restart', ['r']);
+  FA.bindKey('start',   [' ', 'Enter']);
 
   // Input handling
   FA.on('input:action', function(data) {
     var state = FA.getState();
-    if (data.action === 'restart' && state.gameOver) { Game.init(); return; }
-    if (state.gameOver) return;
+
+    // Start screen
+    if (state.screen === 'start' && data.action === 'start') {
+      Game.begin();
+      return;
+    }
+
+    // Game over screens
+    if ((state.screen === 'victory' || state.screen === 'death') && data.action === 'restart') {
+      Game.start();
+      return;
+    }
+
+    // Playing
+    if (state.screen !== 'playing') return;
     switch (data.action) {
       case 'up':    Game.movePlayer(0, -1); break;
       case 'down':  Game.movePlayer(0, 1);  break;
@@ -39,6 +52,11 @@
   FA.setUpdate(function(dt) {
     FA.updateEffects(dt);
     FA.updateFloats(dt);
+    // Narrative message timer
+    var state = FA.getState();
+    if (state.narrativeMessage && state.narrativeMessage.life > 0) {
+      state.narrativeMessage.life -= dt;
+    }
   });
 
   FA.setRender(function() {
@@ -48,12 +66,11 @@
 
   // Start
   Render.setup();
-  Game.init();
+  Game.start();
 
   if (typeof ForkArcade !== 'undefined') {
     ForkArcade.onReady(function() {});
   }
 
   FA.start();
-
 })();

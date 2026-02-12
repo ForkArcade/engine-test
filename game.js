@@ -16,9 +16,7 @@
       }
     }
     for (var i = 0; i < Math.floor(cols * rows * 0.15); i++) {
-      var wx = FA.rand(2, cols - 3);
-      var wy = FA.rand(2, rows - 3);
-      map[wy][wx] = 1;
+      map[FA.rand(2, rows - 3)][FA.rand(2, cols - 3)] = 1;
     }
     return map;
   }
@@ -42,7 +40,14 @@
     return { x: 1, y: 1 };
   }
 
-  function initGame() {
+  // === SCREENS ===
+
+  function startGame() {
+    FA.resetState({ screen: 'start' });
+    FA.clearEffects();
+  }
+
+  function beginPlaying() {
     var cfg = FA.lookup('config', 'game');
     var map = generateMap(cfg.cols, cfg.rows);
     var occupied = [];
@@ -78,25 +83,38 @@
     }
 
     FA.resetState({
+      screen: 'playing',
       map: map,
       player: { x: ppos.x, y: ppos.y, hp: 20, maxHp: 20, atk: 5, def: 1, gold: 0, kills: 0 },
       enemies: enemies,
       items: items,
-      messages: ['Witaj w lochu! Pokonaj szczury.'],
-      gameOver: false,
-      victory: false,
+      messages: [],
+      narrativeMessage: null,
       turn: 0
     });
 
     FA.clearEffects();
     var narCfg = FA.lookup('config', 'narrative');
     if (narCfg) FA.narrative.init(narCfg);
-    FA.narrative.transition('exploring', 'Wchodzisz do lochu');
+    showNarrative('entrance');
   }
+
+  // === NARRATIVE IN-GAME ===
+
+  function showNarrative(nodeId) {
+    FA.narrative.transition(nodeId);
+    var narText = FA.lookup('narrativeText', nodeId);
+    if (narText) {
+      FA.getState().narrativeMessage = { text: narText.text, color: narText.color, life: 4000, maxLife: 4000 };
+      addMessage(narText.text);
+    }
+  }
+
+  // === MOVEMENT ===
 
   function movePlayer(dx, dy) {
     var state = FA.getState();
-    if (state.gameOver) return;
+    if (state.screen !== 'playing') return;
     var nx = state.player.x + dx;
     var ny = state.player.y + dy;
 
@@ -132,14 +150,21 @@
     FA.addFloat(target.x * ts + ts / 2, target.y * ts, '-' + dmg, '#f44', 800);
 
     if (target.hp <= 0) {
-      FA.getState().enemies.splice(idx, 1);
-      FA.getState().player.kills++;
+      var state = FA.getState();
+      state.enemies.splice(idx, 1);
+      state.player.kills++;
       FA.emit('entity:killed', { entity: target });
       addMessage(target.name + ' pokonany!');
-      FA.narrative.setVar('rats_killed', FA.getState().player.kills, 'Pokonano ' + target.name);
+      FA.narrative.setVar('rats_killed', state.player.kills, 'Pokonano ' + target.name);
 
-      if (FA.getState().enemies.length === 0) {
-        FA.narrative.transition('victory', 'Wszystkie szczury pokonane!');
+      if (state.player.kills === 1) {
+        showNarrative('first_blood');
+      } else if (state.player.kills === 3) {
+        showNarrative('hunter');
+      }
+
+      if (state.enemies.length === 0) {
+        showNarrative('victory');
         endGame(true);
       }
     }
@@ -183,7 +208,7 @@
         FA.addFloat(state.player.x * ts + ts / 2, state.player.y * ts, '-' + dmg, '#f84', 800);
 
         if (state.player.hp <= 0) {
-          FA.narrative.transition('death', 'Gracz pokonany!');
+          showNarrative('death');
           endGame(false);
           return;
         }
@@ -205,15 +230,15 @@
 
   function endTurn() {
     var state = FA.getState();
-    if (state.gameOver) return;
+    if (state.screen !== 'playing') return;
     state.turn++;
+    if (state.turn === 1) showNarrative('exploring');
     enemyTurn();
   }
 
   function endGame(victory) {
     var state = FA.getState();
-    state.gameOver = true;
-    state.victory = victory;
+    state.screen = victory ? 'victory' : 'death';
     var scoring = FA.lookup('config', 'scoring');
     state.score = (state.player.kills * scoring.killMultiplier) + (state.player.gold * scoring.goldMultiplier);
     FA.emit('game:over', { victory: victory, score: state.score });
@@ -225,5 +250,9 @@
     if (msgs.length > 6) msgs.shift();
   }
 
-  window.Game = { init: initGame, movePlayer: movePlayer };
+  window.Game = {
+    start: startGame,
+    begin: beginPlaying,
+    movePlayer: movePlayer
+  };
 })();
