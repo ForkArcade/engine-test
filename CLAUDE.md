@@ -1,20 +1,20 @@
 # Roguelike — ForkArcade
 
-Proceduralne dungeony, permadeath, tile-based movement, turowy combat.
+Procedural dungeons, permadeath, tile-based movement, turn-based combat.
 
-## Struktura plików
+## File structure
 
-| Plik | Opis |
-|------|------|
-| `data.js` | Rejestracja danych: `FA.register('enemies', ...)`, `FA.register('items', ...)`, config, behaviors, narrative |
-| `game.js` | Logika: generacja mapy, ruch, combat, AI, tury |
-| `render.js` | Warstwy renderowania: mapa, entity, floats, UI, overlay |
+| File | Description |
+|------|-------------|
+| `data.js` | Data registration: `FA.register('enemies', ...)`, `FA.register('items', ...)`, config, behaviors, narrative |
+| `game.js` | Logic: map generation, movement, combat, AI, turns |
+| `render.js` | Rendering layers: map, entities, floats, UI, overlay |
 | `main.js` | Entry point: keybindings, event wiring, game loop, `ForkArcade.onReady/submitScore` |
 
-Pliki kopiowane przez platformę (nie edytuj):
+Files copied by the platform (do not edit):
 - `fa-engine.js`, `fa-renderer.js`, `fa-input.js`, `fa-audio.js`, `fa-narrative.js` — engine
 - `forkarcade-sdk.js` — SDK
-- `sprites.js` — generowany z `_sprites.json`
+- `sprites.js` — generated from `_sprites.json`
 
 ## Engine API (window.FA)
 
@@ -31,22 +31,22 @@ Pliki kopiowane przez platformę (nie edytuj):
 - **Narrative**: `FA.narrative.init(cfg)`, `.transition(nodeId, event)`, `.setVar(name, val, reason)`
 - **Utils**: `FA.rand(min,max)`, `FA.clamp`, `FA.pick(arr)`, `FA.shuffle(arr)`, `FA.uid()`
 
-## Eventy
+## Events
 
-| Event | Opis |
-|-------|------|
-| `input:action` | Klawisz zbindowany do akcji |
-| `entity:damaged` | Coś dostało obrażenia |
-| `entity:killed` | Coś zginęło |
-| `item:pickup` | Podniesienie przedmiotu |
-| `game:over` | Koniec gry (victory/score) |
-| `state:changed` | Zmiana stanu |
-| `narrative:transition` | Przejście w grafie narracji |
+| Event | Description |
+|-------|-------------|
+| `input:action` | Key bound to action |
+| `entity:damaged` | Something took damage |
+| `entity:killed` | Something died |
+| `item:pickup` | Item picked up |
+| `game:over` | Game ended (victory/score) |
+| `state:changed` | State changed |
+| `narrative:transition` | Narrative graph transition |
 
 ## Scoring
 
-`ForkArcade.submitScore(score)` w obsłudze `game:over`.
+`ForkArcade.submitScore(score)` in the `game:over` handler.
 
 ## Sprite fallback
 
-`FA.draw.sprite(category, name, x, y, size, fallbackChar, fallbackColor)` — jeśli brak sprite'a, rysuje tekst.
+`FA.draw.sprite(category, name, x, y, size, fallbackChar, fallbackColor)` — if sprite is missing, draws text.
