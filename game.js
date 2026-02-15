@@ -174,7 +174,8 @@
         atk: Math.floor(def.atk * atkScale),
         def: def.def + Math.floor((depth - 1) / 2),
         char: def.char, color: def.color, name: def.name,
-        behavior: def.behavior, stunTurns: 0
+        behavior: def.behavior, stunTurns: 0,
+        aiState: 'patrol', alertTarget: null, alertTimer: 0, patrolTarget: null
       });
     }
 
@@ -437,6 +438,7 @@
           }
         }
         addMessage('> EMP PULSE — ' + stunned + ' drones disabled.');
+        propagateSound(state, state.player.x, state.player.y, 12);
         break;
 
       case 'cloak':
@@ -571,6 +573,7 @@
           var ts = cfg.tileSize;
           FA.addFloat(e.x * ts + ts / 2, e.y * ts, '!', '#f80', 600);
           applyDamageToPlayer(dmg, e.name + ' FIRES', state);
+          propagateSound(state, e.x, e.y, 10);
           return;
         }
       }
@@ -629,6 +632,7 @@
     var cfg = FA.lookup('config', 'game');
     var ts = cfg.tileSize;
     FA.addFloat(target.x * ts + ts / 2, target.y * ts, label, color, 800);
+    propagateSound(state, target.x, target.y, 8);
 
     if (target.hp <= 0) {
       state.enemies.splice(idx, 1);
@@ -694,45 +698,192 @@
     }
   }
 
+  // === AI SYSTEM ===
+
+  function hasLOS(map, x1, y1, x2, y2) {
+    var dx = Math.abs(x2 - x1), dy = Math.abs(y2 - y1);
+    var sx = x1 < x2 ? 1 : -1, sy = y1 < y2 ? 1 : -1;
+    var err = dx - dy;
+    var cx = x1, cy = y1;
+    while (true) {
+      if (cx === x2 && cy === y2) return true;
+      var e2 = err * 2;
+      if (e2 > -dy) { err -= dy; cx += sx; }
+      if (e2 < dx) { err += dx; cy += sy; }
+      if (cx === x2 && cy === y2) return true;
+      if (cy < 0 || cy >= map.length || cx < 0 || cx >= map[0].length) return false;
+      if (map[cy][cx] === 1) return false;
+    }
+  }
+
+  function canStep(x, y, state, skipIdx) {
+    if (!isWalkable(state.map, x, y)) return false;
+    if (isOccupied(x, y, skipIdx)) return false;
+    if (x === state.player.x && y === state.player.y) return false;
+    return true;
+  }
+
+  function moveToward(e, tx, ty, state, skipIdx) {
+    var dx = tx - e.x, dy = ty - e.y;
+    var sx = dx > 0 ? 1 : dx < 0 ? -1 : 0;
+    var sy = dy > 0 ? 1 : dy < 0 ? -1 : 0;
+    var moves;
+    if (Math.abs(dx) >= Math.abs(dy)) {
+      moves = [{dx: sx, dy: 0}, {dx: 0, dy: sy || 1}, {dx: 0, dy: -(sy || 1)}];
+    } else {
+      moves = [{dx: 0, dy: sy}, {dx: sx || 1, dy: 0}, {dx: -(sx || 1), dy: 0}];
+    }
+    for (var i = 0; i < moves.length; i++) {
+      if (moves[i].dx === 0 && moves[i].dy === 0) continue;
+      var nx = e.x + moves[i].dx, ny = e.y + moves[i].dy;
+      if (canStep(nx, ny, state, skipIdx)) {
+        e.x = nx; e.y = ny;
+        return true;
+      }
+    }
+    return false;
+  }
+
+  function flankTarget(e, tx, ty, state, skipIdx) {
+    var dx = tx - e.x, dy = ty - e.y;
+    var moves;
+    if (Math.abs(dx) >= Math.abs(dy)) {
+      moves = [{dx: 0, dy: 1}, {dx: 0, dy: -1}];
+    } else {
+      moves = [{dx: 1, dy: 0}, {dx: -1, dy: 0}];
+    }
+    if (Math.random() > 0.5) { var t = moves[0]; moves[0] = moves[1]; moves[1] = t; }
+    for (var i = 0; i < moves.length; i++) {
+      var nx = e.x + moves[i].dx, ny = e.y + moves[i].dy;
+      if (canStep(nx, ny, state, skipIdx)) {
+        e.x = nx; e.y = ny;
+        return true;
+      }
+    }
+    return moveToward(e, tx, ty, state, skipIdx);
+  }
+
+  function randomStep(e, state, skipIdx) {
+    var dirs = [[1,0],[-1,0],[0,1],[0,-1]];
+    for (var i = dirs.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var t = dirs[i]; dirs[i] = dirs[j]; dirs[j] = t;
+    }
+    for (var d = 0; d < dirs.length; d++) {
+      var nx = e.x + dirs[d][0], ny = e.y + dirs[d][1];
+      if (canStep(nx, ny, state, skipIdx)) {
+        e.x = nx; e.y = ny;
+        return;
+      }
+    }
+  }
+
+  function propagateSound(state, x, y, radius) {
+    for (var i = 0; i < state.enemies.length; i++) {
+      var e = state.enemies[i];
+      if (e.aiState === 'hunting') continue;
+      var dist = Math.abs(e.x - x) + Math.abs(e.y - y);
+      if (dist <= radius) {
+        e.aiState = 'alert';
+        e.alertTarget = { x: x, y: y };
+        e.alertTimer = 8;
+      }
+    }
+  }
+
+  function computeEnemyAction(e, state) {
+    var p = state.player;
+    var dist = Math.abs(e.x - p.x) + Math.abs(e.y - p.y);
+    var cloaked = p.cloakTurns > 0;
+    var sightRange = e.behavior === 'tracker' ? 20 : e.behavior === 'sentinel' ? 6 : 8;
+    var canSee = !cloaked && dist <= sightRange && hasLOS(state.map, e.x, e.y, p.x, p.y);
+
+    // Adjacent = always attack (self-defense)
+    if (dist === 1 && !cloaked) {
+      e.aiState = 'hunting';
+      e.alertTarget = { x: p.x, y: p.y };
+      return { type: e.behavior === 'sentinel' ? 'shoot' : 'attack' };
+    }
+
+    // State transitions
+    if (canSee) {
+      e.aiState = 'hunting';
+      e.alertTarget = { x: p.x, y: p.y };
+      e.alertTimer = 0;
+    } else if (e.aiState === 'hunting') {
+      e.aiState = 'alert';
+      e.alertTimer = 8;
+    }
+
+    if (e.aiState === 'alert') {
+      e.alertTimer--;
+      if (e.alertTimer <= 0) {
+        e.aiState = 'patrol';
+        e.alertTarget = null;
+        e.patrolTarget = null;
+      }
+    }
+
+    switch (e.aiState) {
+      case 'hunting':
+        if (e.behavior === 'sentinel') return { type: 'shoot' };
+        if (e.behavior === 'tracker' && dist <= 4) return { type: 'flank' };
+        return { type: 'chase' };
+
+      case 'alert':
+        if (e.behavior === 'sentinel') return { type: 'shoot' };
+        if (e.alertTarget) {
+          if (e.x === e.alertTarget.x && e.y === e.alertTarget.y) return { type: 'random' };
+          return { type: 'investigate' };
+        }
+        return { type: 'random' };
+
+      default: // patrol
+        if (e.behavior === 'sentinel') return { type: 'idle' };
+        if (!e.patrolTarget || (e.x === e.patrolTarget.x && e.y === e.patrolTarget.y)) {
+          var rooms = state.floors[state.depth].rooms;
+          var room = rooms[Math.floor(Math.random() * rooms.length)];
+          e.patrolTarget = { x: Math.floor(room.x + room.w / 2), y: Math.floor(room.y + room.h / 2) };
+        }
+        return { type: 'patrol' };
+    }
+  }
+
   function enemyTurn() {
     var state = FA.getState();
-
-    // Decrement cloak
     if (state.player.cloakTurns > 0) state.player.cloakTurns--;
 
     for (var i = 0; i < state.enemies.length; i++) {
       var e = state.enemies[i];
+      if (e.stunTurns > 0) { e.stunTurns--; continue; }
 
-      // Stunned enemies skip turn
-      if (e.stunTurns > 0) {
-        e.stunTurns--;
-        continue;
-      }
+      var action = computeEnemyAction(e, state);
 
-      var bDef = FA.lookup('behaviors', e.behavior);
-      if (!bDef) continue;
-      var action = bDef.act(e, state);
-
-      // Sentinel shooting
-      if (action.type === 'shoot') {
-        sentinelShoot(e, state);
-        if (state.player.hp <= 0) return;
-        continue;
-      }
-
-      if (action.type !== 'move') continue;
-
-      var nx = e.x + action.dx;
-      var ny = e.y + action.dy;
-
-      if (nx === state.player.x && ny === state.player.y) {
-        if (state.player.cloakTurns > 0) continue; // Can't melee cloaked player
-        var dmg = Math.max(1, e.atk - state.player.def + FA.rand(-1, 1));
-        applyDamageToPlayer(dmg, e.name, state);
-        if (state.player.hp <= 0) return;
-      } else if (isWalkable(state.map, nx, ny) && !isOccupied(nx, ny, i)) {
-        e.x = nx;
-        e.y = ny;
+      switch (action.type) {
+        case 'shoot':
+          sentinelShoot(e, state);
+          if (state.player.hp <= 0) return;
+          break;
+        case 'attack':
+          var dmg = Math.max(1, e.atk - state.player.def + FA.rand(-1, 1));
+          applyDamageToPlayer(dmg, e.name, state);
+          if (state.player.hp <= 0) return;
+          break;
+        case 'chase':
+          moveToward(e, state.player.x, state.player.y, state, i);
+          break;
+        case 'flank':
+          flankTarget(e, state.player.x, state.player.y, state, i);
+          break;
+        case 'investigate':
+          moveToward(e, e.alertTarget.x, e.alertTarget.y, state, i);
+          break;
+        case 'patrol':
+          if (e.patrolTarget) moveToward(e, e.patrolTarget.x, e.patrolTarget.y, state, i);
+          break;
+        case 'random':
+          randomStep(e, state, i);
+          break;
       }
     }
   }

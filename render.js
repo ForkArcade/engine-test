@@ -213,9 +213,13 @@
           FA.draw.bar(en.x * ts + 2, en.y * ts - 3, ts - 4, 2, hpRatio, '#f44', '#400');
         }
 
-        // Stun indicator
+        // Status indicator
         if (en.stunTurns > 0) {
           FA.draw.text('~', ecx, ecy - ts / 2 - 2, { color: '#ff0', size: 10, bold: true, align: 'center', baseline: 'bottom' });
+        } else if (en.aiState === 'hunting') {
+          FA.draw.text('!', ecx, ecy - ts / 2 - 2, { color: '#f44', size: 10, bold: true, align: 'center', baseline: 'bottom' });
+        } else if (en.aiState === 'alert') {
+          FA.draw.text('?', ecx, ecy - ts / 2 - 2, { color: '#ff0', size: 10, bold: true, align: 'center', baseline: 'bottom' });
         }
       }
 

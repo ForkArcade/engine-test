@@ -73,47 +73,8 @@
   FA.register('modules', 'overclock', { name: 'Overclock', char: 'O', color: '#f44' });
   FA.register('modules', 'firewall', { name: 'Firewall', char: 'F', color: '#4f4' });
 
-  // === BEHAVIORS ===
-  FA.register('behaviors', 'chase', {
-    act: function(entity, state) {
-      var dx = 0, dy = 0;
-      var p = state.player;
-      var cloaked = p.cloakTurns > 0;
-      if (!cloaked && Math.abs(p.x - entity.x) + Math.abs(p.y - entity.y) <= 6) {
-        dx = p.x > entity.x ? 1 : (p.x < entity.x ? -1 : 0);
-        dy = p.y > entity.y ? 1 : (p.y < entity.y ? -1 : 0);
-        if (dx !== 0 && dy !== 0) {
-          if (FA.rand(0, 1) === 0) dx = 0; else dy = 0;
-        }
-      } else {
-        var dirs = [[1,0],[-1,0],[0,1],[0,-1]];
-        var d = FA.pick(dirs);
-        dx = d[0]; dy = d[1];
-      }
-      return { type: 'move', dx: dx, dy: dy };
-    }
-  });
-
-  FA.register('behaviors', 'sentinel', {
-    act: function() { return { type: 'shoot' }; }
-  });
-
-  FA.register('behaviors', 'tracker', {
-    act: function(entity, state) {
-      var p = state.player;
-      if (p.cloakTurns > 0) {
-        var dirs = [[1,0],[-1,0],[0,1],[0,-1]];
-        var d = FA.pick(dirs);
-        return { type: 'move', dx: d[0], dy: d[1] };
-      }
-      var dx = p.x > entity.x ? 1 : (p.x < entity.x ? -1 : 0);
-      var dy = p.y > entity.y ? 1 : (p.y < entity.y ? -1 : 0);
-      if (dx !== 0 && dy !== 0) {
-        if (FA.rand(0, 1) === 0) dx = 0; else dy = 0;
-      }
-      return { type: 'move', dx: dx, dy: dy };
-    }
-  });
+  // Behaviors are handled by AI state machine in game.js
+  // Enemy 'behavior' field is a string tag: 'chase', 'sentinel', 'tracker'
 
   // === NARRATIVE ===
   FA.register('config', 'narrative', {
