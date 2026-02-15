@@ -86,6 +86,7 @@
             var openE = isOpen(map, x + 1, y);
             var openW = isOpen(map, x - 1, y);
 
+            // Base fill
             if (openS) {
               // Front wall — 2-part: cap + panel face
               var capH = Math.floor(ts * 0.35);
@@ -93,49 +94,43 @@
               ctx.fillRect(px, py, ts, capH);
               ctx.fillStyle = WALL_FACE;
               ctx.fillRect(px, py + capH, ts, ts - capH);
-              // Panel line
               ctx.fillStyle = WALL_LINE;
               ctx.fillRect(px, py + capH, ts, 1);
-              // Bottom highlight
               ctx.fillStyle = WALL_PANEL;
               ctx.fillRect(px, py + ts - 1, ts, 1);
-              // Vertical panel seams
               if (x % 3 === 0) {
                 ctx.fillStyle = WALL_SIDE;
                 ctx.fillRect(px + ts / 2, py + capH + 2, 1, ts - capH - 3);
               }
             } else if (openN) {
-              // Back wall — thin top accent
+              // Back wall — accent at top
               ctx.fillStyle = WALL_INNER;
               ctx.fillRect(px, py, ts, ts);
               ctx.fillStyle = WALL_SIDE;
               ctx.fillRect(px, py, ts, 2);
-              // Subtle seam
               if (x % 4 === 0) {
                 ctx.fillStyle = WALL_LINE;
                 ctx.fillRect(px + ts / 2, py + 3, 1, ts - 4);
-              }
-            } else if (openE || openW) {
-              // Side wall — vertical accent strip
-              ctx.fillStyle = WALL_INNER;
-              ctx.fillRect(px, py, ts, ts);
-              if (openE) {
-                ctx.fillStyle = WALL_SIDE;
-                ctx.fillRect(px + ts - 2, py, 2, ts);
-              }
-              if (openW) {
-                ctx.fillStyle = WALL_SIDE;
-                ctx.fillRect(px, py, 2, ts);
-              }
-              // Horizontal seam
-              if (y % 3 === 0) {
-                ctx.fillStyle = WALL_LINE;
-                ctx.fillRect(px + 2, py + ts / 2, ts - 4, 1);
               }
             } else {
               // Interior wall
               ctx.fillStyle = WALL_INNER;
               ctx.fillRect(px, py, ts, ts);
+            }
+
+            // Side accents — always on top regardless of N/S style
+            if (openE) {
+              ctx.fillStyle = WALL_SIDE;
+              ctx.fillRect(px + ts - 2, py, 2, ts);
+            }
+            if (openW) {
+              ctx.fillStyle = WALL_SIDE;
+              ctx.fillRect(px, py, 2, ts);
+            }
+            // Horizontal seam on pure side walls
+            if (!openS && !openN && (openE || openW) && y % 3 === 0) {
+              ctx.fillStyle = WALL_LINE;
+              ctx.fillRect(px + 2, py + ts / 2, ts - 4, 1);
             }
           }
         }
