@@ -14,7 +14,6 @@
   FA.bindKey('right', ['ArrowRight', 'd']);
   FA.bindKey('restart', ['r']);
   FA.bindKey('start',   [' ', 'Enter']);
-  FA.bindKey('toggleView', ['Tab']);
 
   // Input handling
   FA.on('input:action', function(data) {
@@ -34,7 +33,6 @@
 
     // Playing
     if (state.screen !== 'playing') return;
-    if (data.action === 'toggleView') { Game.toggleView(); return; }
     switch (data.action) {
       case 'up':    Game.movePlayer(0, -1); break;
       case 'down':  Game.movePlayer(0, 1);  break;

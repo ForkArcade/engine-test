@@ -8,36 +8,38 @@
     tileSize: 20,
     canvasWidth: 800,
     canvasHeight: 600,
-    fov: Math.PI / 3,
-    renderDist: 16
+    maxDepth: 5,
+    roomAttempts: 30,
+    roomMinSize: 4,
+    roomMaxSize: 9
   });
 
   FA.register('config', 'colors', {
     bg: '#0d0b1a', wall: '#1e1638', floor: '#201c3a',
     player: '#4ef', enemy: '#f66', gold: '#fd4', potion: '#4f4',
-    text: '#ddd', dim: '#777', narrative: '#c8b4ff',
-    wallR: 30, wallG: 22, wallB: 56,
-    ceiling: '#0a0a2a', floorFp: '#1a150a'
+    stairsDown: '#f80', stairsUp: '#4cf',
+    text: '#ddd', dim: '#777', narrative: '#c8b4ff'
   });
 
   FA.register('config', 'scoring', {
     killMultiplier: 100,
-    goldMultiplier: 10
+    goldMultiplier: 10,
+    depthBonus: 500
   });
 
   // === ENEMIES ===
   FA.register('enemies', 'rat', {
-    name: 'Szczur', char: 'r', color: '#f66',
+    name: 'Rat', char: 'r', color: '#f66',
     hp: 6, atk: 3, def: 0, xp: 10, behavior: 'chase'
   });
 
   // === ITEMS ===
   FA.register('items', 'gold', {
-    name: 'Zloto', type: 'gold', char: '$', color: '#fd4', value: 10
+    name: 'Gold', type: 'gold', char: '$', color: '#fd4', value: 10
   });
 
   FA.register('items', 'potion', {
-    name: 'Mikstura', type: 'potion', char: '!', color: '#4f4', healAmount: 8
+    name: 'Potion', type: 'potion', char: '!', color: '#4f4', healAmount: 8
   });
 
   // === BEHAVIORS ===
@@ -63,51 +65,67 @@
   // === NARRATIVE ===
   FA.register('config', 'narrative', {
     startNode: 'entrance',
-    variables: { rats_killed: 0, gold_found: 0 },
+    variables: { rats_killed: 0, gold_found: 0, depth_reached: 1 },
     graph: {
       nodes: [
-        { id: 'entrance', label: 'Wejscie do lochu', type: 'scene' },
-        { id: 'exploring', label: 'Eksploracja', type: 'scene' },
-        { id: 'first_blood', label: 'Pierwsza krew', type: 'scene' },
-        { id: 'hunter', label: 'Lowca szczurow', type: 'scene' },
-        { id: 'victory', label: 'Zwyciestwo', type: 'scene' },
-        { id: 'death', label: 'Smierc bohatera', type: 'scene' }
+        { id: 'entrance', label: 'Dungeon entrance', type: 'scene' },
+        { id: 'exploring', label: 'Exploring', type: 'scene' },
+        { id: 'first_blood', label: 'First blood', type: 'scene' },
+        { id: 'descent', label: 'Going deeper', type: 'scene' },
+        { id: 'hunter', label: 'Rat hunter', type: 'scene' },
+        { id: 'deep_dungeon', label: 'Deep dungeon', type: 'scene' },
+        { id: 'victory', label: 'Victory', type: 'scene' },
+        { id: 'death', label: 'Hero death', type: 'scene' }
       ],
       edges: [
         { from: 'entrance', to: 'exploring' },
         { from: 'exploring', to: 'first_blood' },
+        { from: 'exploring', to: 'descent' },
         { from: 'first_blood', to: 'hunter' },
+        { from: 'first_blood', to: 'descent' },
+        { from: 'descent', to: 'deep_dungeon' },
         { from: 'hunter', to: 'victory' },
+        { from: 'deep_dungeon', to: 'victory' },
         { from: 'exploring', to: 'death' },
         { from: 'first_blood', to: 'death' },
-        { from: 'hunter', to: 'death' }
+        { from: 'hunter', to: 'death' },
+        { from: 'descent', to: 'death' },
+        { from: 'deep_dungeon', to: 'death' }
       ]
     }
   });
 
-  // === NARRATIVE MESSAGES (shown in-game) ===
+  // === NARRATIVE MESSAGES ===
   FA.register('narrativeText', 'entrance', {
-    text: 'Zimny podmuch wiatru uderza w twoja twarz. Wchodzisz do ciemnego lochu...',
+    text: 'A cold gust hits your face. You enter the dark dungeon...',
     color: '#c8b4ff'
   });
   FA.register('narrativeText', 'exploring', {
-    text: 'Slyszysz pisk szczurow w ciemnosci. Sa wszedzie.',
+    text: 'You hear rats squeaking in the darkness. They are everywhere.',
     color: '#c8b4ff'
   });
   FA.register('narrativeText', 'first_blood', {
-    text: 'Pierwszy szczur pada. Pozostale staja sie bardziej agresywne!',
+    text: 'The first rat falls. The others become more aggressive!',
     color: '#ffa'
+  });
+  FA.register('narrativeText', 'descent', {
+    text: 'Stairs lead deeper into the earth. The air grows colder.',
+    color: '#f80'
   });
   FA.register('narrativeText', 'hunter', {
-    text: 'Jestes lowca. Szczury uciekaja przed toba, ale nie maja dokad.',
+    text: 'You are the hunter. Rats flee before you, but there is nowhere to hide.',
     color: '#ffa'
   });
+  FA.register('narrativeText', 'deep_dungeon', {
+    text: 'The walls pulse with an eerie glow. Something ancient lurks below.',
+    color: '#f0f'
+  });
   FA.register('narrativeText', 'victory', {
-    text: 'Cisza. Loch jest twoj. Zloto blyszczy w mroku.',
+    text: 'Silence. The dungeon is yours. Gold gleams in the dark.',
     color: '#4f4'
   });
   FA.register('narrativeText', 'death', {
-    text: 'Ciemnosc pochlanla cie. Loch pochlonil kolejnego smialka...',
+    text: 'Darkness swallows you. The dungeon claims another adventurer...',
     color: '#f44'
   });
 
