@@ -333,12 +333,12 @@
       if (!nm || nm.life <= 0) return;
 
       var alpha = nm.life < 1000 ? nm.life / 1000 : 1;
-      FA.draw.withAlpha(alpha * 0.85, function() {
-        FA.draw.rect(0, 0, W, 28, '#0a0f1a');
-      });
-      FA.draw.withAlpha(alpha, function() {
-        FA.draw.text(nm.text, W / 2, 14, { color: nm.color, size: 13, align: 'center', baseline: 'middle' });
-      });
+      FA.draw.pushAlpha(alpha * 0.85);
+      FA.draw.rect(0, 0, W, 28, '#0a0f1a');
+      FA.draw.popAlpha();
+      FA.draw.pushAlpha(alpha);
+      FA.draw.text(nm.text, W / 2, 14, { color: nm.color, size: 13, align: 'center', baseline: 'middle' });
+      FA.draw.popAlpha();
     }, 25);
 
     // === UI PANEL ===
@@ -405,9 +405,9 @@
       var state = FA.getState();
       if (state.screen !== 'victory' && state.screen !== 'shutdown') return;
 
-      FA.draw.withAlpha(0.8, function() {
-        FA.draw.rect(0, 0, W, uiY, '#000');
-      });
+      FA.draw.pushAlpha(0.8);
+      FA.draw.rect(0, 0, W, uiY, '#000');
+      FA.draw.popAlpha();
 
       var ending = endingTitles[state.endingNode] || endingTitles.shutdown;
       FA.draw.text(ending.title, W / 2, uiY / 2 - 70, { color: ending.color, size: 28, bold: true, align: 'center', baseline: 'middle' });
