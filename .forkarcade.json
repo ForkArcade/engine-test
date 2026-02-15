@@ -8,7 +8,7 @@
   ],
   "slug": "engine-test",
   "title": "Engine Test",
-  "currentVersion": 9,
+  "currentVersion": 10,
   "versions": [
     {
       "version": 1,
@@ -63,6 +63,12 @@
       "date": "2026-02-15",
       "issue": null,
       "description": "Published v9"
+    },
+    {
+      "version": 10,
+      "date": "2026-02-15",
+      "issue": null,
+      "description": "Published v10"
     }
   ],
   "sdkVersion": 1,
