@@ -7,13 +7,17 @@
     cols: 40, rows: 25,
     tileSize: 20,
     canvasWidth: 800,
-    canvasHeight: 600
+    canvasHeight: 600,
+    fov: Math.PI / 3,
+    renderDist: 16
   });
 
   FA.register('config', 'colors', {
     bg: '#0d0b1a', wall: '#1e1638', floor: '#201c3a',
     player: '#4ef', enemy: '#f66', gold: '#fd4', potion: '#4f4',
-    text: '#ddd', dim: '#777', narrative: '#c8b4ff'
+    text: '#ddd', dim: '#777', narrative: '#c8b4ff',
+    wallR: 30, wallG: 22, wallB: 56,
+    ceiling: '#0a0a2a', floorFp: '#1a150a'
   });
 
   FA.register('config', 'scoring', {

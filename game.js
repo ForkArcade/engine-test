@@ -85,7 +85,8 @@
     FA.resetState({
       screen: 'playing',
       map: map,
-      player: { x: ppos.x, y: ppos.y, hp: 20, maxHp: 20, atk: 5, def: 1, gold: 0, kills: 0 },
+      viewMode: '2d',
+      player: { x: ppos.x, y: ppos.y, hp: 20, maxHp: 20, atk: 5, def: 1, gold: 0, kills: 0, angle: -Math.PI / 2 },
       enemies: enemies,
       items: items,
       messages: [],
@@ -129,6 +130,7 @@
     if (!isWalkable(state.map, nx, ny)) return;
     state.player.x = nx;
     state.player.y = ny;
+    state.player.angle = Math.atan2(dy, dx);
     FA.playSound('step');
 
     for (var j = state.items.length - 1; j >= 0; j--) {
@@ -250,9 +252,16 @@
     if (msgs.length > 6) msgs.shift();
   }
 
+  function toggleView() {
+    var state = FA.getState();
+    if (state.screen !== 'playing') return;
+    state.viewMode = state.viewMode === '2d' ? '3d' : '2d';
+  }
+
   window.Game = {
     start: startGame,
     begin: beginPlaying,
-    movePlayer: movePlayer
+    movePlayer: movePlayer,
+    toggleView: toggleView
   };
 })();
