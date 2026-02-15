@@ -1,4 +1,4 @@
-// Roguelike — Entry Point
+// Deep Protocol — Entry Point
 (function() {
   'use strict';
   var FA = window.FA;
@@ -26,7 +26,7 @@
     }
 
     // Game over screens
-    if ((state.screen === 'victory' || state.screen === 'death') && data.action === 'restart') {
+    if ((state.screen === 'extraction' || state.screen === 'shutdown') && data.action === 'restart') {
       Game.start();
       return;
     }

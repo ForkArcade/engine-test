@@ -1,4 +1,4 @@
-// Roguelike — Rendering
+// Deep Protocol — Rendering
 (function() {
   'use strict';
   var FA = window.FA;
@@ -11,13 +11,16 @@
     var H = cfg.canvasHeight;
     var uiY = cfg.rows * ts;
 
-    // Wall colors
-    var WALL_TOP = '#151030';
-    var WALL_FACE = '#2a2255';
-    var WALL_SIDE = '#1f1845';
-    var WALL_INNER = '#120e24';
-    var FLOOR_BASE = '#201c3a';
-    var FLOOR_ACCENT = '#262042';
+    // Sci-fi wall palette
+    var WALL_CAP = '#181d30';
+    var WALL_FACE = '#252b42';
+    var WALL_PANEL = '#2e3550';
+    var WALL_SIDE = '#1f2538';
+    var WALL_INNER = '#10141f';
+    var WALL_LINE = '#333c55';
+    var FLOOR_A = '#161a28';
+    var FLOOR_B = '#181c2a';
+    var FLOOR_DOT = '#1e2335';
 
     function isOpen(map, x, y) {
       if (x < 0 || x >= cfg.cols || y < 0 || y >= cfg.rows) return false;
@@ -31,19 +34,19 @@
 
       FA.draw.clear(colors.bg);
 
-      FA.draw.text('RAT DUNGEON', W / 2, H / 2 - 80, { color: colors.player, size: 36, bold: true, align: 'center', baseline: 'middle' });
-      FA.draw.text('r   r   r   r   r', W / 2, H / 2 - 30, { color: colors.enemy, size: 20, align: 'center', baseline: 'middle' });
-      FA.draw.text('Enter the dungeon. Defeat the rats. Collect gold.', W / 2, H / 2 + 20, { color: colors.narrative, size: 14, align: 'center', baseline: 'middle' });
-      FA.draw.text('5 floors of increasing danger await.', W / 2, H / 2 + 42, { color: colors.dim, size: 12, align: 'center', baseline: 'middle' });
+      FA.draw.text('DEEP PROTOCOL', W / 2, H / 2 - 80, { color: colors.player, size: 36, bold: true, align: 'center', baseline: 'middle' });
+      FA.draw.text('d   d   d   d   d', W / 2, H / 2 - 30, { color: colors.enemy, size: 20, align: 'center', baseline: 'middle' });
+      FA.draw.text('Infiltrate the facility. Neutralize drones. Extract data.', W / 2, H / 2 + 20, { color: colors.narrative, size: 14, align: 'center', baseline: 'middle' });
+      FA.draw.text('5 sub-levels of increasing security.', W / 2, H / 2 + 42, { color: colors.dim, size: 12, align: 'center', baseline: 'middle' });
       FA.draw.text('WASD / Arrows — move and attack', W / 2, H / 2 + 70, { color: colors.dim, size: 12, align: 'center', baseline: 'middle' });
-      FA.draw.text('Walk onto stairs to change floors', W / 2, H / 2 + 90, { color: colors.dim, size: 12, align: 'center', baseline: 'middle' });
-      FA.draw.text('[ SPACE ]  to begin', W / 2, H / 2 + 130, { color: '#fff', size: 18, bold: true, align: 'center', baseline: 'middle' });
+      FA.draw.text('Walk onto access points to change levels', W / 2, H / 2 + 90, { color: colors.dim, size: 12, align: 'center', baseline: 'middle' });
+      FA.draw.text('[ SPACE ]  to initiate', W / 2, H / 2 + 130, { color: '#fff', size: 18, bold: true, align: 'center', baseline: 'middle' });
     }, 0);
 
     // === MAP WITH WALL AUTOTILING ===
     FA.addLayer('map', function() {
       var state = FA.getState();
-      if (state.screen !== 'playing' && state.screen !== 'victory' && state.screen !== 'death') return;
+      if (state.screen !== 'playing' && state.screen !== 'extraction' && state.screen !== 'shutdown') return;
       if (!state.map) return;
       var ctx = FA.getCtx();
       var map = state.map;
@@ -54,43 +57,66 @@
           var px = x * ts, py = y * ts;
 
           if (tile === 0) {
-            // Floor tile with subtle checker pattern
-            ctx.fillStyle = (x + y) % 2 === 0 ? FLOOR_BASE : FLOOR_ACCENT;
+            // Floor — subtle grid
+            ctx.fillStyle = (x + y) % 2 === 0 ? FLOOR_A : FLOOR_B;
             ctx.fillRect(px, py, ts, ts);
+            // Grid dot at center
+            if ((x + y) % 3 === 0) {
+              ctx.fillStyle = FLOOR_DOT;
+              ctx.fillRect(px + ts / 2, py + ts / 2, 1, 1);
+            }
           } else if (tile === 2) {
-            // Stairs down
+            // Access down
+            ctx.fillStyle = '#1a1000';
+            ctx.fillRect(px, py, ts, ts);
             ctx.fillStyle = colors.stairsDown;
-            ctx.fillRect(px, py, ts, ts);
-            FA.draw.text('>', px + ts / 2, py + ts / 2, { color: '#fff', size: 14, bold: true, align: 'center', baseline: 'middle' });
+            ctx.fillRect(px + 2, py + 2, ts - 4, ts - 4);
+            FA.draw.text('v', px + ts / 2, py + ts / 2, { color: '#fff', size: 12, bold: true, align: 'center', baseline: 'middle' });
           } else if (tile === 3) {
-            // Stairs up
-            ctx.fillStyle = colors.stairsUp;
+            // Access up
+            ctx.fillStyle = '#001a1a';
             ctx.fillRect(px, py, ts, ts);
-            FA.draw.text('<', px + ts / 2, py + ts / 2, { color: '#fff', size: 14, bold: true, align: 'center', baseline: 'middle' });
+            ctx.fillStyle = colors.stairsUp;
+            ctx.fillRect(px + 2, py + 2, ts - 4, ts - 4);
+            FA.draw.text('^', px + ts / 2, py + ts / 2, { color: '#fff', size: 12, bold: true, align: 'center', baseline: 'middle' });
           } else {
-            // Wall — autotile based on neighbors
+            // Wall autotiling
             var openS = isOpen(map, x, y + 1);
             var openN = isOpen(map, x, y - 1);
             var openE = isOpen(map, x + 1, y);
             var openW = isOpen(map, x - 1, y);
 
             if (openS) {
-              // Front-facing wall (floor below) — 2-part: dark cap + lighter face
-              ctx.fillStyle = WALL_TOP;
-              ctx.fillRect(px, py, ts, Math.floor(ts * 0.4));
+              // Front wall — 2-part: cap + panel face
+              var capH = Math.floor(ts * 0.35);
+              ctx.fillStyle = WALL_CAP;
+              ctx.fillRect(px, py, ts, capH);
               ctx.fillStyle = WALL_FACE;
-              ctx.fillRect(px, py + Math.floor(ts * 0.4), ts, ts - Math.floor(ts * 0.4));
-              // Bottom edge highlight
-              ctx.fillStyle = '#3a3070';
+              ctx.fillRect(px, py + capH, ts, ts - capH);
+              // Panel line
+              ctx.fillStyle = WALL_LINE;
+              ctx.fillRect(px, py + capH, ts, 1);
+              // Bottom highlight
+              ctx.fillStyle = WALL_PANEL;
               ctx.fillRect(px, py + ts - 1, ts, 1);
+              // Vertical panel seams
+              if (x % 3 === 0) {
+                ctx.fillStyle = WALL_SIDE;
+                ctx.fillRect(px + ts / 2, py + capH + 2, 1, ts - capH - 3);
+              }
             } else if (openN) {
-              // Back wall (floor above) — single accent at top
+              // Back wall — thin top accent
               ctx.fillStyle = WALL_INNER;
               ctx.fillRect(px, py, ts, ts);
               ctx.fillStyle = WALL_SIDE;
               ctx.fillRect(px, py, ts, 2);
+              // Subtle seam
+              if (x % 4 === 0) {
+                ctx.fillStyle = WALL_LINE;
+                ctx.fillRect(px + ts / 2, py + 3, 1, ts - 4);
+              }
             } else if (openE || openW) {
-              // Side wall — vertical accent
+              // Side wall — vertical accent strip
               ctx.fillStyle = WALL_INNER;
               ctx.fillRect(px, py, ts, ts);
               if (openE) {
@@ -101,8 +127,13 @@
                 ctx.fillStyle = WALL_SIDE;
                 ctx.fillRect(px, py, 2, ts);
               }
+              // Horizontal seam
+              if (y % 3 === 0) {
+                ctx.fillStyle = WALL_LINE;
+                ctx.fillRect(px + 2, py + ts / 2, ts - 4, 1);
+              }
             } else {
-              // Interior wall — fully dark
+              // Interior wall
               ctx.fillStyle = WALL_INNER;
               ctx.fillRect(px, py, ts, ts);
             }
@@ -114,7 +145,7 @@
     // === ENTITIES ===
     FA.addLayer('entities', function() {
       var state = FA.getState();
-      if (state.screen !== 'playing' && state.screen !== 'victory' && state.screen !== 'death') return;
+      if (state.screen !== 'playing' && state.screen !== 'extraction' && state.screen !== 'shutdown') return;
       if (!state.player) return;
 
       for (var i = 0; i < state.items.length; i++) {
@@ -124,7 +155,7 @@
 
       for (var e = 0; e < state.enemies.length; e++) {
         var en = state.enemies[e];
-        FA.draw.sprite('enemies', 'rat', en.x * ts, en.y * ts, ts, en.char, en.color, 0);
+        FA.draw.sprite('enemies', 'drone', en.x * ts, en.y * ts, ts, en.char, en.color, 0);
         var hpRatio = en.hp / en.maxHp;
         if (hpRatio < 1) {
           FA.draw.bar(en.x * ts + 2, en.y * ts - 3, ts - 4, 2, hpRatio, '#f44', '#400');
@@ -155,8 +186,8 @@
           if (tx < 0 || tx >= cfg.cols || ty < 0 || ty >= cfg.rows) break;
           var dist = Math.sqrt((tx - px) * (tx - px) + (ty - py) * (ty - py));
           if (dist > radius) break;
-          var light = 1 - (dist / radius);
-          light = light * light;
+          // Bright center (dist < 2), then linear falloff
+          var light = dist < 2 ? 1 : Math.max(0, 1 - (dist - 2) / (radius - 2));
           if (light > vis[ty][tx]) vis[ty][tx] = light;
           if (map[ty][tx] === 1) break;
         }
@@ -171,7 +202,7 @@
 
       var ctx = FA.getCtx();
       var p = state.player;
-      var lightRadius = 9 - (state.depth || 1) * 0.5;
+      var lightRadius = 10 - (state.depth || 1) * 0.5;
       var vis = computeFOV(state.map, p.x, p.y, lightRadius);
       var explored = state.explored;
 
@@ -186,16 +217,18 @@
       ctx.fillStyle = '#000';
       for (var y2 = 0; y2 < cfg.rows; y2++) {
         for (var x2 = 0; x2 < cfg.cols; x2++) {
-          if (vis[y2][x2] > 0.03) {
-            // Currently visible — shadow based on light level
-            var dark = 1 - vis[y2][x2];
-            ctx.globalAlpha = Math.min(dark, 0.92);
+          if (vis[y2][x2] > 0.97) {
+            // Fully lit — no overlay
+            continue;
+          } else if (vis[y2][x2] > 0.03) {
+            // Visible with shadow falloff
+            ctx.globalAlpha = Math.min(1 - vis[y2][x2], 0.88);
           } else if (explored[y2][x2]) {
-            // Explored but not visible — dim memory
-            ctx.globalAlpha = 0.75;
+            // Explored memory — dim blue tint
+            ctx.globalAlpha = 0.72;
           } else {
-            // Never seen — full darkness
-            ctx.globalAlpha = 0.97;
+            // Never seen
+            ctx.globalAlpha = 0.96;
           }
           ctx.fillRect(x2 * ts, y2 * ts, ts, ts);
         }
@@ -206,7 +239,7 @@
     // === FLOATING MESSAGES ===
     FA.addLayer('floats', function() {
       var state = FA.getState();
-      if (state.screen !== 'playing' && state.screen !== 'victory' && state.screen !== 'death') return;
+      if (state.screen !== 'playing' && state.screen !== 'extraction' && state.screen !== 'shutdown') return;
       FA.drawFloats();
     }, 20);
 
@@ -219,7 +252,7 @@
 
       var alpha = nm.life < 1000 ? nm.life / 1000 : 1;
       FA.draw.withAlpha(alpha * 0.85, function() {
-        FA.draw.rect(0, 0, W, 28, '#1a1030');
+        FA.draw.rect(0, 0, W, 28, '#0a0f1a');
       });
       FA.draw.withAlpha(alpha, function() {
         FA.draw.text(nm.text, W / 2, 14, { color: nm.color, size: 13, align: 'center', baseline: 'middle' });
@@ -229,21 +262,21 @@
     // === UI PANEL ===
     FA.addLayer('ui', function() {
       var state = FA.getState();
-      if (state.screen !== 'playing' && state.screen !== 'victory' && state.screen !== 'death') return;
+      if (state.screen !== 'playing' && state.screen !== 'extraction' && state.screen !== 'shutdown') return;
       if (!state.player) return;
       var p = state.player;
 
-      FA.draw.rect(0, uiY, W, H - uiY, '#111');
+      FA.draw.rect(0, uiY, W, H - uiY, '#0c1018');
 
-      FA.draw.text('HP', 8, uiY + 8, { color: colors.text, size: 12 });
-      FA.draw.bar(30, uiY + 8, 100, 12, p.hp / p.maxHp, '#4f4', '#400');
-      FA.draw.text(p.hp + '/' + p.maxHp, 135, uiY + 8, { color: colors.text, size: 12 });
-      FA.draw.text('ATK:' + p.atk + '  DEF:' + p.def, 200, uiY + 8, { color: colors.dim, size: 12 });
+      FA.draw.text('HULL', 8, uiY + 8, { color: colors.text, size: 12 });
+      FA.draw.bar(40, uiY + 8, 100, 12, p.hp / p.maxHp, '#4f4', '#1a0a0a');
+      FA.draw.text(p.hp + '/' + p.maxHp, 145, uiY + 8, { color: colors.text, size: 12 });
+      FA.draw.text('ATK:' + p.atk + '  DEF:' + p.def, 210, uiY + 8, { color: colors.dim, size: 12 });
 
-      var depthText = 'Depth:' + (state.depth || 1) + '/' + cfg.maxDepth;
+      var depthText = 'LVL:' + (state.depth || 1) + '/' + cfg.maxDepth;
       FA.draw.text(depthText, 340, uiY + 8, { color: colors.stairsDown, size: 12, bold: true });
 
-      FA.draw.text('Gold:' + p.gold + '  Kills:' + p.kills + '  Turn:' + state.turn, 8, uiY + 26, { color: colors.dim, size: 12 });
+      FA.draw.text('Data:' + p.gold + '  Kills:' + p.kills + '  Turn:' + state.turn, 8, uiY + 26, { color: colors.dim, size: 12 });
 
       var msgs = state.messages;
       for (var i = 0; i < msgs.length; i++) {
@@ -254,17 +287,17 @@
     // === GAME OVER SCREEN ===
     FA.addLayer('gameOver', function() {
       var state = FA.getState();
-      if (state.screen !== 'victory' && state.screen !== 'death') return;
+      if (state.screen !== 'extraction' && state.screen !== 'shutdown') return;
 
-      var isVictory = state.screen === 'victory';
+      var isVictory = state.screen === 'extraction';
 
-      FA.draw.withAlpha(0.75, function() {
+      FA.draw.withAlpha(0.8, function() {
         FA.draw.rect(0, 0, W, uiY, '#000');
       });
 
-      var title = isVictory ? 'VICTORY!' : 'DEATH!';
+      var title = isVictory ? 'EXTRACTION COMPLETE' : 'SYSTEM SHUTDOWN';
       var titleColor = isVictory ? '#4f4' : '#f44';
-      FA.draw.text(title, W / 2, uiY / 2 - 70, { color: titleColor, size: 32, bold: true, align: 'center', baseline: 'middle' });
+      FA.draw.text(title, W / 2, uiY / 2 - 70, { color: titleColor, size: 28, bold: true, align: 'center', baseline: 'middle' });
 
       var narText = FA.lookup('narrativeText', state.screen);
       if (narText) {
@@ -272,14 +305,14 @@
       }
 
       var p = state.player;
-      FA.draw.text('Rats defeated: ' + p.kills, W / 2, uiY / 2 + 10, { color: colors.text, size: 14, align: 'center', baseline: 'middle' });
-      FA.draw.text('Gold collected: ' + p.gold, W / 2, uiY / 2 + 30, { color: colors.gold, size: 14, align: 'center', baseline: 'middle' });
-      FA.draw.text('Deepest floor: ' + (state.maxDepthReached || 1) + '/' + cfg.maxDepth, W / 2, uiY / 2 + 50, { color: colors.stairsDown, size: 14, align: 'center', baseline: 'middle' });
+      FA.draw.text('Drones neutralized: ' + p.kills, W / 2, uiY / 2 + 10, { color: colors.text, size: 14, align: 'center', baseline: 'middle' });
+      FA.draw.text('Data extracted: ' + p.gold, W / 2, uiY / 2 + 30, { color: colors.gold, size: 14, align: 'center', baseline: 'middle' });
+      FA.draw.text('Deepest level: ' + (state.maxDepthReached || 1) + '/' + cfg.maxDepth, W / 2, uiY / 2 + 50, { color: colors.stairsDown, size: 14, align: 'center', baseline: 'middle' });
       FA.draw.text('Turns: ' + state.turn, W / 2, uiY / 2 + 70, { color: colors.dim, size: 14, align: 'center', baseline: 'middle' });
 
       FA.draw.text('SCORE: ' + (state.score || 0), W / 2, uiY / 2 + 105, { color: '#fff', size: 22, bold: true, align: 'center', baseline: 'middle' });
 
-      FA.draw.text('[ R ]  Play again', W / 2, uiY / 2 + 145, { color: colors.dim, size: 16, align: 'center', baseline: 'middle' });
+      FA.draw.text('[ R ]  Reinitialize', W / 2, uiY / 2 + 145, { color: colors.dim, size: 16, align: 'center', baseline: 'middle' });
     }, 40);
   }
 

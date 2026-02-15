@@ -1,4 +1,4 @@
-// Roguelike — Data
+// Deep Protocol — Data
 (function() {
   'use strict';
   var FA = window.FA;
@@ -15,10 +15,10 @@
   });
 
   FA.register('config', 'colors', {
-    bg: '#0d0b1a', wall: '#1e1638', floor: '#201c3a',
-    player: '#4ef', enemy: '#f66', gold: '#fd4', potion: '#4f4',
+    bg: '#0a0e18', wall: '#1e2233', floor: '#161a28',
+    player: '#4ef', enemy: '#fa3', gold: '#0ff', potion: '#4f4',
     stairsDown: '#f80', stairsUp: '#4cf',
-    text: '#ddd', dim: '#777', narrative: '#c8b4ff'
+    text: '#bcc8dd', dim: '#556', narrative: '#8af'
   });
 
   FA.register('config', 'scoring', {
@@ -28,18 +28,18 @@
   });
 
   // === ENEMIES ===
-  FA.register('enemies', 'rat', {
-    name: 'Rat', char: 'r', color: '#f66',
+  FA.register('enemies', 'drone', {
+    name: 'Drone', char: 'd', color: '#fa3',
     hp: 6, atk: 3, def: 0, xp: 10, behavior: 'chase'
   });
 
   // === ITEMS ===
   FA.register('items', 'gold', {
-    name: 'Gold', type: 'gold', char: '$', color: '#fd4', value: 10
+    name: 'Data Core', type: 'gold', char: '%', color: '#0ff', value: 10
   });
 
   FA.register('items', 'potion', {
-    name: 'Potion', type: 'potion', char: '!', color: '#4f4', healAmount: 8
+    name: 'Repair Kit', type: 'potion', char: '+', color: '#4f4', healAmount: 8
   });
 
   // === BEHAVIORS ===
@@ -64,68 +64,68 @@
 
   // === NARRATIVE ===
   FA.register('config', 'narrative', {
-    startNode: 'entrance',
-    variables: { rats_killed: 0, gold_found: 0, depth_reached: 1 },
+    startNode: 'boot',
+    variables: { drones_destroyed: 0, cores_found: 0, depth_reached: 1 },
     graph: {
       nodes: [
-        { id: 'entrance', label: 'Dungeon entrance', type: 'scene' },
-        { id: 'exploring', label: 'Exploring', type: 'scene' },
-        { id: 'first_blood', label: 'First blood', type: 'scene' },
-        { id: 'descent', label: 'Going deeper', type: 'scene' },
-        { id: 'hunter', label: 'Rat hunter', type: 'scene' },
-        { id: 'deep_dungeon', label: 'Deep dungeon', type: 'scene' },
-        { id: 'victory', label: 'Victory', type: 'scene' },
-        { id: 'death', label: 'Hero death', type: 'scene' }
+        { id: 'boot', label: 'System boot', type: 'scene' },
+        { id: 'scanning', label: 'Scanning sector', type: 'scene' },
+        { id: 'first_contact', label: 'First contact', type: 'scene' },
+        { id: 'descent', label: 'Deeper access', type: 'scene' },
+        { id: 'hunter', label: 'Hunter protocol', type: 'scene' },
+        { id: 'core_sector', label: 'Core sector', type: 'scene' },
+        { id: 'extraction', label: 'Extraction', type: 'scene' },
+        { id: 'shutdown', label: 'Shutdown', type: 'scene' }
       ],
       edges: [
-        { from: 'entrance', to: 'exploring' },
-        { from: 'exploring', to: 'first_blood' },
-        { from: 'exploring', to: 'descent' },
-        { from: 'first_blood', to: 'hunter' },
-        { from: 'first_blood', to: 'descent' },
-        { from: 'descent', to: 'deep_dungeon' },
-        { from: 'hunter', to: 'victory' },
-        { from: 'deep_dungeon', to: 'victory' },
-        { from: 'exploring', to: 'death' },
-        { from: 'first_blood', to: 'death' },
-        { from: 'hunter', to: 'death' },
-        { from: 'descent', to: 'death' },
-        { from: 'deep_dungeon', to: 'death' }
+        { from: 'boot', to: 'scanning' },
+        { from: 'scanning', to: 'first_contact' },
+        { from: 'scanning', to: 'descent' },
+        { from: 'first_contact', to: 'hunter' },
+        { from: 'first_contact', to: 'descent' },
+        { from: 'descent', to: 'core_sector' },
+        { from: 'hunter', to: 'extraction' },
+        { from: 'core_sector', to: 'extraction' },
+        { from: 'scanning', to: 'shutdown' },
+        { from: 'first_contact', to: 'shutdown' },
+        { from: 'hunter', to: 'shutdown' },
+        { from: 'descent', to: 'shutdown' },
+        { from: 'core_sector', to: 'shutdown' }
       ]
     }
   });
 
   // === NARRATIVE MESSAGES ===
-  FA.register('narrativeText', 'entrance', {
-    text: 'A cold gust hits your face. You enter the dark dungeon...',
-    color: '#c8b4ff'
+  FA.register('narrativeText', 'boot', {
+    text: '> SYSTEM ONLINE. Unauthorized unit detected. Initiating sector scan...',
+    color: '#4ef'
   });
-  FA.register('narrativeText', 'exploring', {
-    text: 'You hear rats squeaking in the darkness. They are everywhere.',
-    color: '#c8b4ff'
+  FA.register('narrativeText', 'scanning', {
+    text: '> Motion signatures detected. Security drones patrolling corridors.',
+    color: '#8af'
   });
-  FA.register('narrativeText', 'first_blood', {
-    text: 'The first rat falls. The others become more aggressive!',
-    color: '#ffa'
+  FA.register('narrativeText', 'first_contact', {
+    text: '> HOSTILE NEUTRALIZED. Alert level increased. More units inbound.',
+    color: '#fa3'
   });
   FA.register('narrativeText', 'descent', {
-    text: 'Stairs lead deeper into the earth. The air grows colder.',
+    text: '> Accessing sub-level. Encryption density rising. Signal degrading.',
     color: '#f80'
   });
   FA.register('narrativeText', 'hunter', {
-    text: 'You are the hunter. Rats flee before you, but there is nowhere to hide.',
-    color: '#ffa'
+    text: '> Combat subroutines optimized. Threat assessment: you are the threat.',
+    color: '#fa3'
   });
-  FA.register('narrativeText', 'deep_dungeon', {
-    text: 'The walls pulse with an eerie glow. Something ancient lurks below.',
+  FA.register('narrativeText', 'core_sector', {
+    text: '> WARNING: Core sector breach. Mainframe defense grid active.',
     color: '#f0f'
   });
-  FA.register('narrativeText', 'victory', {
-    text: 'Silence. The dungeon is yours. Gold gleams in the dark.',
+  FA.register('narrativeText', 'extraction', {
+    text: '> All sectors cleared. Data extraction complete. Uploading...',
     color: '#4f4'
   });
-  FA.register('narrativeText', 'death', {
-    text: 'Darkness swallows you. The dungeon claims another adventurer...',
+  FA.register('narrativeText', 'shutdown', {
+    text: '> CRITICAL FAILURE. System integrity lost. Initiating shutdown...',
     color: '#f44'
   });
 

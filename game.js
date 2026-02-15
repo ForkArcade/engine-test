@@ -134,7 +134,7 @@
 
   function populateFloor(map, rooms, depth) {
     var occupied = [];
-    var ratDef = FA.lookup('enemies', 'rat');
+    var droneDef = FA.lookup('enemies', 'drone');
     var enemies = [];
     var enemyCount = 3 + depth * 2;
     var hpScale = 1 + (depth - 1) * 0.3;
@@ -145,12 +145,12 @@
       occupied.push(epos);
       enemies.push({
         id: FA.uid(), x: epos.x, y: epos.y,
-        hp: Math.floor(ratDef.hp * hpScale),
-        maxHp: Math.floor(ratDef.hp * hpScale),
-        atk: Math.floor(ratDef.atk * atkScale),
-        def: ratDef.def + Math.floor((depth - 1) / 2),
-        char: ratDef.char, color: ratDef.color, name: ratDef.name,
-        behavior: ratDef.behavior
+        hp: Math.floor(droneDef.hp * hpScale),
+        maxHp: Math.floor(droneDef.hp * hpScale),
+        atk: Math.floor(droneDef.atk * atkScale),
+        def: droneDef.def + Math.floor((depth - 1) / 2),
+        char: droneDef.char, color: droneDef.color, name: droneDef.name,
+        behavior: droneDef.behavior
       });
     }
 
@@ -217,7 +217,7 @@
     FA.clearEffects();
     var narCfg = FA.lookup('config', 'narrative');
     if (narCfg) FA.narrative.init(narCfg);
-    showNarrative('entrance');
+    showNarrative('boot');
   }
 
   // === FLOOR TRANSITION ===
@@ -263,11 +263,11 @@
     }
 
     FA.clearEffects();
-    addMessage(direction === 'down' ? 'You descend to depth ' + newDepth + '...' : 'You ascend to depth ' + newDepth + '...');
-    FA.narrative.setVar('depth_reached', state.maxDepthReached, 'Reached depth ' + state.maxDepthReached);
+    addMessage(direction === 'down' ? '> Accessing sub-level ' + newDepth + '...' : '> Returning to level ' + newDepth + '...');
+    FA.narrative.setVar('depth_reached', state.maxDepthReached, 'Reached level ' + state.maxDepthReached);
 
     if (direction === 'down' && newDepth === 2) showNarrative('descent');
-    if (direction === 'down' && newDepth >= 4) showNarrative('deep_dungeon');
+    if (direction === 'down' && newDepth >= 4) showNarrative('core_sector');
   }
 
   // === NARRATIVE IN-GAME ===
@@ -333,14 +333,14 @@
       state.player.kills++;
       FA.emit('entity:killed', { entity: target });
       addMessage(target.name + ' defeated!');
-      FA.narrative.setVar('rats_killed', state.player.kills, 'Defeated ' + target.name);
+      FA.narrative.setVar('drones_destroyed', state.player.kills, 'Destroyed ' + target.name);
 
-      if (state.player.kills === 1) showNarrative('first_blood');
+      if (state.player.kills === 1) showNarrative('first_contact');
       else if (state.player.kills === 3) showNarrative('hunter');
 
       // Victory: cleared all floors
       if (allFloorsCleared(state)) {
-        showNarrative('victory');
+        showNarrative('extraction');
         endGame(true);
       }
     }
@@ -362,8 +362,8 @@
     FA.emit('item:pickup', { item: item });
     if (item.type === 'gold') {
       state.player.gold += item.value;
-      addMessage('+' + item.value + ' gold');
-      FA.narrative.setVar('gold_found', state.player.gold, 'Found gold');
+      addMessage('+' + item.value + ' data');
+      FA.narrative.setVar('cores_found', state.player.gold, 'Recovered data core');
     } else if (item.type === 'potion') {
       var heal = Math.min(item.healAmount, state.player.maxHp - state.player.hp);
       state.player.hp += heal;
@@ -394,7 +394,7 @@
         FA.addFloat(state.player.x * ts + ts / 2, state.player.y * ts, '-' + dmg, '#f84', 800);
 
         if (state.player.hp <= 0) {
-          showNarrative('death');
+          showNarrative('shutdown');
           endGame(false);
           return;
         }
@@ -418,13 +418,13 @@
     var state = FA.getState();
     if (state.screen !== 'playing') return;
     state.turn++;
-    if (state.turn === 1) showNarrative('exploring');
+    if (state.turn === 1) showNarrative('scanning');
     enemyTurn();
   }
 
   function endGame(victory) {
     var state = FA.getState();
-    state.screen = victory ? 'victory' : 'death';
+    state.screen = victory ? 'extraction' : 'shutdown';
     var scoring = FA.lookup('config', 'scoring');
     state.score = (state.player.kills * scoring.killMultiplier) +
                   (state.player.gold * scoring.goldMultiplier) +
