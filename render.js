@@ -74,6 +74,28 @@
       FA.draw.sprite('player', 'base', p.x * ts, p.y * ts, ts, '@', colors.player, 0);
     }, 10);
 
+    // === PLAYER LIGHT ===
+    FA.addLayer('lighting', function() {
+      var state = FA.getState();
+      if (state.screen !== 'playing') return;
+      if (!state.player) return;
+
+      var ctx = FA.getCtx();
+      var p = state.player;
+      var cx = (p.x + 0.5) * ts;
+      var cy = (p.y + 0.5) * ts;
+      var lightRadius = (9 - (state.depth || 1)) * ts;
+
+      ctx.save();
+      var grad = ctx.createRadialGradient(cx, cy, ts * 1.5, cx, cy, lightRadius);
+      grad.addColorStop(0, 'rgba(0,0,0,0)');
+      grad.addColorStop(0.6, 'rgba(0,0,0,0.4)');
+      grad.addColorStop(1, 'rgba(0,0,0,0.92)');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, W, uiY);
+      ctx.restore();
+    }, 15);
+
     // === FLOATING MESSAGES ===
     FA.addLayer('floats', function() {
       var state = FA.getState();
