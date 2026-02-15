@@ -34,13 +34,16 @@
 
       FA.draw.clear(colors.bg);
 
-      FA.draw.text('DEEP PROTOCOL', W / 2, H / 2 - 80, { color: colors.player, size: 36, bold: true, align: 'center', baseline: 'middle' });
-      FA.draw.text('d   d   d   d   d', W / 2, H / 2 - 30, { color: colors.enemy, size: 20, align: 'center', baseline: 'middle' });
-      FA.draw.text('Infiltrate the facility. Neutralize drones. Extract data.', W / 2, H / 2 + 20, { color: colors.narrative, size: 14, align: 'center', baseline: 'middle' });
-      FA.draw.text('5 sub-levels of increasing security.', W / 2, H / 2 + 42, { color: colors.dim, size: 12, align: 'center', baseline: 'middle' });
-      FA.draw.text('WASD / Arrows — move and attack', W / 2, H / 2 + 70, { color: colors.dim, size: 12, align: 'center', baseline: 'middle' });
-      FA.draw.text('Walk onto access points to change levels', W / 2, H / 2 + 90, { color: colors.dim, size: 12, align: 'center', baseline: 'middle' });
-      FA.draw.text('[ SPACE ]  to initiate', W / 2, H / 2 + 130, { color: '#fff', size: 18, bold: true, align: 'center', baseline: 'middle' });
+      FA.draw.text('DEEP PROTOCOL', W / 2, H / 2 - 100, { color: colors.player, size: 36, bold: true, align: 'center', baseline: 'middle' });
+      FA.draw.text('d   S   t   d   S', W / 2, H / 2 - 55, { color: colors.enemy, size: 20, align: 'center', baseline: 'middle' });
+      FA.draw.text('Infiltrate. Hack terminals. Recover hardware. Choose your protocol.', W / 2, H / 2 - 15, { color: colors.narrative, size: 13, align: 'center', baseline: 'middle' });
+      FA.draw.text('5 sub-levels  |  3 paths  |  3 endings', W / 2, H / 2 + 10, { color: colors.dim, size: 12, align: 'center', baseline: 'middle' });
+
+      FA.draw.text('WASD / Arrows — move & attack', W / 2, H / 2 + 45, { color: colors.dim, size: 12, align: 'center', baseline: 'middle' });
+      FA.draw.text('1 / 2 / 3 — activate module', W / 2, H / 2 + 63, { color: '#ff0', size: 12, align: 'center', baseline: 'middle' });
+      FA.draw.text('Walk on terminals to hack  |  Walk on stairs to descend', W / 2, H / 2 + 83, { color: colors.dim, size: 11, align: 'center', baseline: 'middle' });
+
+      FA.draw.text('[ SPACE ]  to initiate', W / 2, H / 2 + 125, { color: '#fff', size: 18, bold: true, align: 'center', baseline: 'middle' });
     }, 0);
 
     // === MAP WITH WALL AUTOTILING ===
@@ -60,7 +63,6 @@
             // Floor — subtle grid
             ctx.fillStyle = (x + y) % 2 === 0 ? FLOOR_A : FLOOR_B;
             ctx.fillRect(px, py, ts, ts);
-            // Grid dot at center
             if ((x + y) % 3 === 0) {
               ctx.fillStyle = FLOOR_DOT;
               ctx.fillRect(px + ts / 2, py + ts / 2, 1, 1);
@@ -79,6 +81,23 @@
             ctx.fillStyle = colors.stairsUp;
             ctx.fillRect(px + 2, py + 2, ts - 4, ts - 4);
             FA.draw.text('^', px + ts / 2, py + ts / 2, { color: '#fff', size: 12, bold: true, align: 'center', baseline: 'middle' });
+          } else if (tile === 4) {
+            // Active terminal
+            ctx.fillStyle = FLOOR_A;
+            ctx.fillRect(px, py, ts, ts);
+            ctx.fillStyle = '#0a2a2a';
+            ctx.fillRect(px + 2, py + 2, ts - 4, ts - 4);
+            ctx.fillStyle = '#0ff';
+            ctx.fillRect(px + 3, py + 3, ts - 6, 2);
+            ctx.fillRect(px + 3, py + ts - 5, ts - 6, 2);
+            FA.draw.text('T', px + ts / 2, py + ts / 2, { color: '#0ff', size: 11, bold: true, align: 'center', baseline: 'middle' });
+          } else if (tile === 5) {
+            // Used terminal
+            ctx.fillStyle = FLOOR_A;
+            ctx.fillRect(px, py, ts, ts);
+            ctx.fillStyle = '#0a1515';
+            ctx.fillRect(px + 2, py + 2, ts - 4, ts - 4);
+            FA.draw.text('T', px + ts / 2, py + ts / 2, { color: '#223', size: 11, align: 'center', baseline: 'middle' });
           } else {
             // Wall autotiling
             var openS = isOpen(map, x, y + 1);
@@ -88,7 +107,6 @@
 
             // Base fill
             if (openS) {
-              // Front wall — 2-part: cap + panel face
               var capH = Math.floor(ts * 0.35);
               ctx.fillStyle = WALL_CAP;
               ctx.fillRect(px, py, ts, capH);
@@ -103,7 +121,6 @@
                 ctx.fillRect(px + ts / 2, py + capH + 2, 1, ts - capH - 3);
               }
             } else if (openN) {
-              // Back wall — accent at top
               ctx.fillStyle = WALL_INNER;
               ctx.fillRect(px, py, ts, ts);
               ctx.fillStyle = WALL_SIDE;
@@ -113,12 +130,11 @@
                 ctx.fillRect(px + ts / 2, py + 3, 1, ts - 4);
               }
             } else {
-              // Interior wall
               ctx.fillStyle = WALL_INNER;
               ctx.fillRect(px, py, ts, ts);
             }
 
-            // Side accents — always on top regardless of N/S style
+            // Side accents — always on top
             if (openE) {
               ctx.fillStyle = WALL_SIDE;
               ctx.fillRect(px + ts - 2, py, 2, ts);
@@ -127,7 +143,6 @@
               ctx.fillStyle = WALL_SIDE;
               ctx.fillRect(px, py, 2, ts);
             }
-            // Horizontal seam on pure side walls
             if (!openS && !openN && (openE || openW) && y % 3 === 0) {
               ctx.fillStyle = WALL_LINE;
               ctx.fillRect(px + 2, py + ts / 2, ts - 4, 1);
@@ -149,7 +164,7 @@
         var item = state.items[i];
         var icx = item.x * ts + ts / 2, icy = item.y * ts + ts / 2;
         ctx.save();
-        ctx.globalAlpha = 0.15;
+        ctx.globalAlpha = item.type === 'module' ? 0.25 : 0.15;
         var ig = ctx.createRadialGradient(icx, icy, 0, icx, icy, ts);
         ig.addColorStop(0, item.color);
         ig.addColorStop(1, 'transparent');
@@ -159,10 +174,30 @@
         FA.draw.sprite('items', item.type, item.x * ts, item.y * ts, ts, item.char, item.color, 0);
       }
 
-      // Drones with amber glow
+      // Enemies with glow + sentinel fire lines
       for (var e = 0; e < state.enemies.length; e++) {
         var en = state.enemies[e];
         var ecx = en.x * ts + ts / 2, ecy = en.y * ts + ts / 2;
+
+        // Sentinel fire lines (before glow, so glow renders on top)
+        if (en.behavior === 'sentinel' && !(en.stunTurns > 0)) {
+          ctx.save();
+          ctx.globalAlpha = 0.12;
+          ctx.fillStyle = en.color;
+          var dirs = [[1,0],[-1,0],[0,1],[0,-1]];
+          for (var dd = 0; dd < dirs.length; dd++) {
+            var lx = en.x, ly = en.y;
+            for (var lr = 1; lr <= 6; lr++) {
+              lx += dirs[dd][0];
+              ly += dirs[dd][1];
+              if (ly < 0 || ly >= cfg.rows || lx < 0 || lx >= cfg.cols) break;
+              if (state.map[ly][lx] === 1) break;
+              ctx.fillRect(lx * ts + ts / 2 - 1, ly * ts + ts / 2 - 1, 3, 3);
+            }
+          }
+          ctx.restore();
+        }
+
         ctx.save();
         ctx.globalAlpha = 0.25;
         var eg = ctx.createRadialGradient(ecx, ecy, 2, ecx, ecy, ts * 1.2);
@@ -171,25 +206,48 @@
         ctx.fillStyle = eg;
         ctx.fillRect(en.x * ts - ts / 2, en.y * ts - ts / 2, ts * 2, ts * 2);
         ctx.restore();
-        FA.draw.sprite('enemies', 'drone', en.x * ts, en.y * ts, ts, en.char, en.color, 0);
+
+        FA.draw.sprite('enemies', en.behavior, en.x * ts, en.y * ts, ts, en.char, en.color, 0);
         var hpRatio = en.hp / en.maxHp;
         if (hpRatio < 1) {
           FA.draw.bar(en.x * ts + 2, en.y * ts - 3, ts - 4, 2, hpRatio, '#f44', '#400');
         }
+
+        // Stun indicator
+        if (en.stunTurns > 0) {
+          FA.draw.text('~', ecx, ecy - ts / 2 - 2, { color: '#ff0', size: 10, bold: true, align: 'center', baseline: 'bottom' });
+        }
       }
 
-      // Player with cyan glow
+      // Player with cyan glow (dim if cloaked)
       var p = state.player;
       var pcx = p.x * ts + ts / 2, pcy = p.y * ts + ts / 2;
-      ctx.save();
-      ctx.globalAlpha = 0.2;
-      var pg = ctx.createRadialGradient(pcx, pcy, 2, pcx, pcy, ts * 1.3);
-      pg.addColorStop(0, colors.player);
-      pg.addColorStop(1, 'transparent');
-      ctx.fillStyle = pg;
-      ctx.fillRect(p.x * ts - ts / 2, p.y * ts - ts / 2, ts * 2, ts * 2);
-      ctx.restore();
-      FA.draw.sprite('player', 'base', p.x * ts, p.y * ts, ts, '@', colors.player, 0);
+
+      if (p.cloakTurns > 0) {
+        // Cloaked — ghostly appearance
+        ctx.save();
+        ctx.globalAlpha = 0.12;
+        var cg = ctx.createRadialGradient(pcx, pcy, 2, pcx, pcy, ts * 1.3);
+        cg.addColorStop(0, '#88f');
+        cg.addColorStop(1, 'transparent');
+        ctx.fillStyle = cg;
+        ctx.fillRect(p.x * ts - ts / 2, p.y * ts - ts / 2, ts * 2, ts * 2);
+        ctx.restore();
+        ctx.save();
+        ctx.globalAlpha = 0.35;
+        FA.draw.sprite('player', 'base', p.x * ts, p.y * ts, ts, '@', '#88f', 0);
+        ctx.restore();
+      } else {
+        ctx.save();
+        ctx.globalAlpha = 0.2;
+        var pg = ctx.createRadialGradient(pcx, pcy, 2, pcx, pcy, ts * 1.3);
+        pg.addColorStop(0, colors.player);
+        pg.addColorStop(1, 'transparent');
+        ctx.fillStyle = pg;
+        ctx.fillRect(p.x * ts - ts / 2, p.y * ts - ts / 2, ts * 2, ts * 2);
+        ctx.restore();
+        FA.draw.sprite('player', 'base', p.x * ts, p.y * ts, ts, '@', colors.player, 0);
+      }
     }, 10);
 
     // === SHADOWCAST LIGHTING + EXPLORED MEMORY ===
@@ -212,7 +270,6 @@
           if (tx < 0 || tx >= cfg.cols || ty < 0 || ty >= cfg.rows) break;
           var dist = Math.sqrt((tx - px) * (tx - px) + (ty - py) * (ty - py));
           if (dist > radius) break;
-          // Bright center (dist < 2), then linear falloff
           var light = dist < 2 ? 1 : Math.max(0, 1 - (dist - 2) / (radius - 2));
           if (light > vis[ty][tx]) vis[ty][tx] = light;
           if (map[ty][tx] === 1) break;
@@ -232,7 +289,6 @@
       var vis = computeFOV(state.map, p.x, p.y, lightRadius);
       var explored = state.explored;
 
-      // Mark visible tiles as explored
       for (var y = 0; y < cfg.rows; y++) {
         for (var x = 0; x < cfg.cols; x++) {
           if (vis[y][x] > 0.05) explored[y][x] = true;
@@ -244,16 +300,12 @@
       for (var y2 = 0; y2 < cfg.rows; y2++) {
         for (var x2 = 0; x2 < cfg.cols; x2++) {
           if (vis[y2][x2] > 0.97) {
-            // Fully lit — no overlay
             continue;
           } else if (vis[y2][x2] > 0.03) {
-            // Visible with shadow falloff
             ctx.globalAlpha = Math.min(1 - vis[y2][x2], 0.88);
           } else if (explored[y2][x2]) {
-            // Explored memory — dim blue tint
             ctx.globalAlpha = 0.72;
           } else {
-            // Never seen
             ctx.globalAlpha = 0.96;
           }
           ctx.fillRect(x2 * ts, y2 * ts, ts, ts);
@@ -294,19 +346,46 @@
 
       FA.draw.rect(0, uiY, W, H - uiY, '#0c1018');
 
-      FA.draw.text('HULL', 8, uiY + 8, { color: colors.text, size: 12 });
-      FA.draw.bar(40, uiY + 8, 100, 12, p.hp / p.maxHp, '#4f4', '#1a0a0a');
-      FA.draw.text(p.hp + '/' + p.maxHp, 145, uiY + 8, { color: colors.text, size: 12 });
-      FA.draw.text('ATK:' + p.atk + '  DEF:' + p.def, 210, uiY + 8, { color: colors.dim, size: 12 });
-
+      // Line 1: Hull + stats
+      FA.draw.text('HULL', 8, uiY + 6, { color: colors.text, size: 11 });
+      FA.draw.bar(38, uiY + 6, 90, 10, p.hp / p.maxHp, '#4f4', '#1a0a0a');
+      FA.draw.text(p.hp + '/' + p.maxHp, 132, uiY + 6, { color: colors.text, size: 11 });
+      FA.draw.text('ATK:' + p.atk + '  DEF:' + p.def, 195, uiY + 6, { color: colors.dim, size: 11 });
       var depthText = 'LVL:' + (state.depth || 1) + '/' + cfg.maxDepth;
-      FA.draw.text(depthText, 340, uiY + 8, { color: colors.stairsDown, size: 12, bold: true });
+      FA.draw.text(depthText, 310, uiY + 6, { color: colors.stairsDown, size: 11, bold: true });
 
-      FA.draw.text('Data:' + p.gold + '  Kills:' + p.kills + '  Turn:' + state.turn, 8, uiY + 26, { color: colors.dim, size: 12 });
+      // Active buffs
+      var buffX = 380;
+      if (p.cloakTurns > 0) {
+        FA.draw.text('CLOAK:' + p.cloakTurns, buffX, uiY + 6, { color: '#88f', size: 11, bold: true });
+        buffX += 65;
+      }
+      if (p.overclockActive) {
+        FA.draw.text('OC:RDY', buffX, uiY + 6, { color: '#f44', size: 11, bold: true });
+        buffX += 55;
+      }
+      if (p.firewallHp > 0) {
+        FA.draw.text('FW:' + p.firewallHp, buffX, uiY + 6, { color: '#4f4', size: 11, bold: true });
+      }
 
+      // Line 2: Module slots
+      var mods = p.modules || [];
+      for (var m = 0; m < 3; m++) {
+        var mx = 8 + m * 120;
+        if (m < mods.length) {
+          FA.draw.text('[' + (m + 1) + '] ' + mods[m].name, mx, uiY + 21, { color: mods[m].color, size: 11, bold: true });
+        } else {
+          FA.draw.text('[' + (m + 1) + '] ---', mx, uiY + 21, { color: '#223', size: 11 });
+        }
+      }
+
+      // Line 3: Stats
+      FA.draw.text('Data:' + p.gold + '  Kills:' + p.kills + '  Turn:' + state.turn, 8, uiY + 36, { color: colors.dim, size: 11 });
+
+      // Messages
       var msgs = state.messages;
       for (var i = 0; i < msgs.length; i++) {
-        FA.draw.text(msgs[i], 8, uiY + 44 + i * 14, { color: colors.dim, size: 11 });
+        FA.draw.text(msgs[i], 8, uiY + 50 + i * 12, { color: colors.dim, size: 10 });
       }
     }, 30);
 
@@ -338,7 +417,7 @@
       FA.draw.text('Drones neutralized: ' + p.kills, W / 2, uiY / 2 + 10, { color: colors.text, size: 14, align: 'center', baseline: 'middle' });
       FA.draw.text('Data extracted: ' + p.gold, W / 2, uiY / 2 + 30, { color: colors.gold, size: 14, align: 'center', baseline: 'middle' });
       FA.draw.text('Deepest level: ' + (state.maxDepthReached || 1) + '/' + cfg.maxDepth, W / 2, uiY / 2 + 50, { color: colors.stairsDown, size: 14, align: 'center', baseline: 'middle' });
-      FA.draw.text('Turns: ' + state.turn, W / 2, uiY / 2 + 70, { color: colors.dim, size: 14, align: 'center', baseline: 'middle' });
+      FA.draw.text('Terminals hacked: ' + (state.terminalsHacked || 0), W / 2, uiY / 2 + 70, { color: '#0ff', size: 14, align: 'center', baseline: 'middle' });
 
       if (state.path && state.path !== 'none') {
         var pathLabels = { hunter: 'HUNTER', ghost: 'GHOST', archivist: 'ARCHIVIST' };

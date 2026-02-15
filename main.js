@@ -14,6 +14,9 @@
   FA.bindKey('right', ['ArrowRight', 'd']);
   FA.bindKey('restart', ['r']);
   FA.bindKey('start',   [' ', 'Enter']);
+  FA.bindKey('mod1', ['1']);
+  FA.bindKey('mod2', ['2']);
+  FA.bindKey('mod3', ['3']);
 
   // Input handling
   FA.on('input:action', function(data) {
@@ -38,6 +41,9 @@
       case 'down':  Game.movePlayer(0, 1);  break;
       case 'left':  Game.movePlayer(-1, 0); break;
       case 'right': Game.movePlayer(1, 0);  break;
+      case 'mod1':  Game.useModule(0); break;
+      case 'mod2':  Game.useModule(1); break;
+      case 'mod3':  Game.useModule(2); break;
     }
   });
 

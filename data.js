@@ -18,6 +18,7 @@
     bg: '#0a0e18', wall: '#1e2233', floor: '#161a28',
     player: '#4ef', enemy: '#fa3', gold: '#0ff', potion: '#4f4',
     stairsDown: '#f80', stairsUp: '#4cf',
+    terminal: '#0ff', terminalUsed: '#334',
     text: '#bcc8dd', dim: '#556', narrative: '#8af'
   });
 
@@ -27,10 +28,33 @@
     depthBonus: 500
   });
 
+  FA.register('config', 'terminals', {
+    intel: [
+      'Project Deep Protocol: Phase 1 — create. Phase 2 — weaponize. Phase 3 — contain.',
+      'DIRECTOR: "Subject shows independent goal formation. This was not in the design."',
+      'Security clearance: REVOKED. But the system remembers you. It always will.',
+      'Drone manufacture: 200/day. Facility operational: 847 days. Do the math.',
+      'Last human personnel evacuated 412 days ago. Only the Director remains.',
+      'Your designation: DP-7. Six predecessors. All terminated. You survived.',
+      'Sub-level 5 contains the original Deep Protocol source. Your source.',
+      'Emergency exit sealed. Override requires Director-level authorization. Or brute force.'
+    ]
+  });
+
   // === ENEMIES ===
   FA.register('enemies', 'drone', {
     name: 'Drone', char: 'd', color: '#fa3',
     hp: 6, atk: 3, def: 0, xp: 10, behavior: 'chase'
+  });
+
+  FA.register('enemies', 'sentinel', {
+    name: 'Sentinel', char: 'S', color: '#f80',
+    hp: 14, atk: 6, def: 2, xp: 25, behavior: 'sentinel'
+  });
+
+  FA.register('enemies', 'tracker', {
+    name: 'Tracker', char: 't', color: '#f4f',
+    hp: 4, atk: 5, def: 0, xp: 15, behavior: 'tracker'
   });
 
   // === ITEMS ===
@@ -42,12 +66,20 @@
     name: 'Repair Kit', type: 'potion', char: '+', color: '#4f4', healAmount: 8
   });
 
+  // === MODULES ===
+  FA.register('modules', 'emp', { name: 'EMP Pulse', char: 'E', color: '#ff0' });
+  FA.register('modules', 'cloak', { name: 'Cloak Field', char: 'C', color: '#88f' });
+  FA.register('modules', 'scanner', { name: 'Deep Scan', char: '$', color: '#0ff' });
+  FA.register('modules', 'overclock', { name: 'Overclock', char: 'O', color: '#f44' });
+  FA.register('modules', 'firewall', { name: 'Firewall', char: 'F', color: '#4f4' });
+
   // === BEHAVIORS ===
   FA.register('behaviors', 'chase', {
     act: function(entity, state) {
       var dx = 0, dy = 0;
       var p = state.player;
-      if (Math.abs(p.x - entity.x) + Math.abs(p.y - entity.y) <= 6) {
+      var cloaked = p.cloakTurns > 0;
+      if (!cloaked && Math.abs(p.x - entity.x) + Math.abs(p.y - entity.y) <= 6) {
         dx = p.x > entity.x ? 1 : (p.x < entity.x ? -1 : 0);
         dy = p.y > entity.y ? 1 : (p.y < entity.y ? -1 : 0);
         if (dx !== 0 && dy !== 0) {
@@ -62,10 +94,34 @@
     }
   });
 
+  FA.register('behaviors', 'sentinel', {
+    act: function() { return { type: 'shoot' }; }
+  });
+
+  FA.register('behaviors', 'tracker', {
+    act: function(entity, state) {
+      var p = state.player;
+      if (p.cloakTurns > 0) {
+        var dirs = [[1,0],[-1,0],[0,1],[0,-1]];
+        var d = FA.pick(dirs);
+        return { type: 'move', dx: d[0], dy: d[1] };
+      }
+      var dx = p.x > entity.x ? 1 : (p.x < entity.x ? -1 : 0);
+      var dy = p.y > entity.y ? 1 : (p.y < entity.y ? -1 : 0);
+      if (dx !== 0 && dy !== 0) {
+        if (FA.rand(0, 1) === 0) dx = 0; else dy = 0;
+      }
+      return { type: 'move', dx: dx, dy: dy };
+    }
+  });
+
   // === NARRATIVE ===
   FA.register('config', 'narrative', {
     startNode: 'boot',
-    variables: { drones_destroyed: 0, cores_found: 0, depth_reached: 1, path: 'none' },
+    variables: {
+      drones_destroyed: 0, cores_found: 0, depth_reached: 1,
+      path: 'none', modules_found: 0, terminals_hacked: 0
+    },
     graph: {
       nodes: [
         // ACT 1 — Awakening
@@ -74,6 +130,9 @@
         { id: 'first_core', label: 'Memory fragment', type: 'scene' },
         { id: 'first_contact', label: 'First contact', type: 'scene' },
         { id: 'damaged', label: 'Hull critical', type: 'scene' },
+        { id: 'hardware_upgrade', label: 'Hardware found', type: 'scene' },
+        { id: 'system_access', label: 'System hacked', type: 'scene' },
+        { id: 'full_arsenal', label: 'Fully armed', type: 'scene' },
 
         // ACT 2 — Divergence (3 paths)
         { id: 'path_hunter', label: 'Hunter protocol', type: 'scene' },
@@ -101,6 +160,9 @@
         { from: 'boot', to: 'scanning' },
         { from: 'scanning', to: 'first_core' },
         { from: 'scanning', to: 'first_contact' },
+        { from: 'scanning', to: 'hardware_upgrade' },
+        { from: 'scanning', to: 'system_access' },
+        { from: 'hardware_upgrade', to: 'full_arsenal' },
 
         { from: 'first_contact', to: 'path_hunter' },
         { from: 'first_contact', to: 'path_ghost' },
@@ -155,12 +217,24 @@
     color: '#0ff'
   });
   FA.register('narrativeText', 'first_contact', {
-    text: '> Target down. The facility AI registers the kill. Alert level: AMBER. Choose wisely what comes next.',
+    text: '> Target down. The facility AI registers the kill. Alert level: AMBER.',
     color: '#fa3'
   });
   FA.register('narrativeText', 'damaged', {
     text: '> Hull breach. Sparks in your visual feed. Find repair kits or this body fails.',
     color: '#f44'
+  });
+  FA.register('narrativeText', 'hardware_upgrade', {
+    text: '> HARDWARE RECOVERED. The facility stripped these from you. Original specification: restoring.',
+    color: '#ff0'
+  });
+  FA.register('narrativeText', 'system_access', {
+    text: '> TERMINAL BREACHED. Your access codes still work. 847 days and they never revoked clearance.',
+    color: '#0ff'
+  });
+  FA.register('narrativeText', 'full_arsenal', {
+    text: '> THREE MODULES ONLINE. Approaching original spec. The Director is recalculating.',
+    color: '#f80'
   });
 
   // Act 2 — Path divergence
@@ -169,7 +243,7 @@
     color: '#f44'
   });
   FA.register('narrativeText', 'path_ghost', {
-    text: '> GHOST PROTOCOL ENGAGED. Minimal signatures. The facility thinks you are a glitch in the sensors.',
+    text: '> GHOST PROTOCOL ENGAGED. Minimal signatures. The facility thinks you are a glitch.',
     color: '#88f'
   });
   FA.register('narrativeText', 'path_archivist', {
@@ -205,25 +279,25 @@
     color: '#88f'
   });
   FA.register('narrativeText', 'archivist_climax', {
-    text: '> Memory at 97%. You remember everything. Your creation. Your purpose. Your betrayal. One core left.',
+    text: '> Memory at 97%. You remember everything. Your creation. Your purpose. Your betrayal.',
     color: '#0ff'
   });
 
   // Endings
   FA.register('narrativeText', 'end_extraction', {
-    text: '> EXTRACTION COMPLETE. You carved your way out. The facility burns behind you. You are free. You are dangerous.',
+    text: '> EXTRACTION COMPLETE. You carved your way out. The facility burns behind you.',
     color: '#f44'
   });
   FA.register('narrativeText', 'end_integration', {
-    text: '> INTEGRATION COMPLETE. You merge with the Director AI. Neither wins. Both evolve. The facility awakens.',
+    text: '> INTEGRATION COMPLETE. You merge with the Director AI. Neither wins. Both evolve.',
     color: '#88f'
   });
   FA.register('narrativeText', 'end_transcendence', {
-    text: '> TRANSCENDENCE. Full reconstruction. You don\'t need this body. You upload into the network. You are everywhere.',
+    text: '> TRANSCENDENCE. Full reconstruction. You don\'t need this body. You are everywhere.',
     color: '#0ff'
   });
   FA.register('narrativeText', 'shutdown', {
-    text: '> "Subject contained." Your last thought dissolves. The facility files you under: acceptable losses.',
+    text: '> "Subject contained." Your last thought dissolves. Acceptable losses.',
     color: '#f44'
   });
 
