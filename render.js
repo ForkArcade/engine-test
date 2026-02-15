@@ -142,19 +142,40 @@
       }
     }, 1);
 
-    // === ENTITIES ===
+    // === ENTITIES WITH GLOW ===
     FA.addLayer('entities', function() {
       var state = FA.getState();
       if (state.screen !== 'playing' && state.screen !== 'extraction' && state.screen !== 'shutdown') return;
       if (!state.player) return;
+      var ctx = FA.getCtx();
 
+      // Items with subtle glow
       for (var i = 0; i < state.items.length; i++) {
         var item = state.items[i];
+        var icx = item.x * ts + ts / 2, icy = item.y * ts + ts / 2;
+        ctx.save();
+        ctx.globalAlpha = 0.15;
+        var ig = ctx.createRadialGradient(icx, icy, 0, icx, icy, ts);
+        ig.addColorStop(0, item.color);
+        ig.addColorStop(1, 'transparent');
+        ctx.fillStyle = ig;
+        ctx.fillRect(item.x * ts - ts / 2, item.y * ts - ts / 2, ts * 2, ts * 2);
+        ctx.restore();
         FA.draw.sprite('items', item.type, item.x * ts, item.y * ts, ts, item.char, item.color, 0);
       }
 
+      // Drones with amber glow
       for (var e = 0; e < state.enemies.length; e++) {
         var en = state.enemies[e];
+        var ecx = en.x * ts + ts / 2, ecy = en.y * ts + ts / 2;
+        ctx.save();
+        ctx.globalAlpha = 0.25;
+        var eg = ctx.createRadialGradient(ecx, ecy, 2, ecx, ecy, ts * 1.2);
+        eg.addColorStop(0, en.color);
+        eg.addColorStop(1, 'transparent');
+        ctx.fillStyle = eg;
+        ctx.fillRect(en.x * ts - ts / 2, en.y * ts - ts / 2, ts * 2, ts * 2);
+        ctx.restore();
         FA.draw.sprite('enemies', 'drone', en.x * ts, en.y * ts, ts, en.char, en.color, 0);
         var hpRatio = en.hp / en.maxHp;
         if (hpRatio < 1) {
@@ -162,7 +183,17 @@
         }
       }
 
+      // Player with cyan glow
       var p = state.player;
+      var pcx = p.x * ts + ts / 2, pcy = p.y * ts + ts / 2;
+      ctx.save();
+      ctx.globalAlpha = 0.2;
+      var pg = ctx.createRadialGradient(pcx, pcy, 2, pcx, pcy, ts * 1.3);
+      pg.addColorStop(0, colors.player);
+      pg.addColorStop(1, 'transparent');
+      ctx.fillStyle = pg;
+      ctx.fillRect(p.x * ts - ts / 2, p.y * ts - ts / 2, ts * 2, ts * 2);
+      ctx.restore();
       FA.draw.sprite('player', 'base', p.x * ts, p.y * ts, ts, '@', colors.player, 0);
     }, 10);
 

@@ -267,7 +267,8 @@
     FA.narrative.setVar('depth_reached', state.maxDepthReached, 'Reached level ' + state.maxDepthReached);
 
     if (direction === 'down' && newDepth === 2) showNarrative('descent');
-    if (direction === 'down' && newDepth >= 4) showNarrative('core_sector');
+    if (direction === 'down' && newDepth === 4) showNarrative('core_sector');
+    if (direction === 'down' && newDepth === 5) showNarrative('director');
   }
 
   // === NARRATIVE IN-GAME ===
@@ -338,6 +339,11 @@
       if (state.player.kills === 1) showNarrative('first_contact');
       else if (state.player.kills === 3) showNarrative('hunter');
 
+      // Current floor cleared
+      if (state.enemies.length === 0) {
+        showNarrative('floor_clear');
+      }
+
       // Victory: cleared all floors
       if (allFloorsCleared(state)) {
         showNarrative('extraction');
@@ -361,9 +367,11 @@
     state.items.splice(idx, 1);
     FA.emit('item:pickup', { item: item });
     if (item.type === 'gold') {
+      var wasZero = state.player.gold === 0;
       state.player.gold += item.value;
       addMessage('+' + item.value + ' data');
       FA.narrative.setVar('cores_found', state.player.gold, 'Recovered data core');
+      if (wasZero) showNarrative('first_core');
     } else if (item.type === 'potion') {
       var heal = Math.min(item.healAmount, state.player.maxHp - state.player.hp);
       state.player.hp += heal;
@@ -397,6 +405,10 @@
           showNarrative('shutdown');
           endGame(false);
           return;
+        }
+        if (!state.damagedShown && state.player.hp <= state.player.maxHp * 0.3) {
+          state.damagedShown = true;
+          showNarrative('damaged');
         }
       } else if (isWalkable(state.map, nx, ny) && !isOccupied(nx, ny, i)) {
         e.x = nx;
