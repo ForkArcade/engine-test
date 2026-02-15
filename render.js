@@ -74,7 +74,35 @@
       FA.draw.sprite('player', 'base', p.x * ts, p.y * ts, ts, '@', colors.player, 0);
     }, 10);
 
-    // === PLAYER LIGHT ===
+    // === SHADOWCAST LIGHTING ===
+    function computeFOV(map, px, py, radius) {
+      var vis = [];
+      for (var y = 0; y < cfg.rows; y++) {
+        vis[y] = [];
+        for (var x = 0; x < cfg.cols; x++) vis[y][x] = 0;
+      }
+      vis[py][px] = 1;
+      var rays = 720;
+      for (var a = 0; a < rays; a++) {
+        var angle = (a / rays) * Math.PI * 2;
+        var dx = Math.cos(angle) * 0.5;
+        var dy = Math.sin(angle) * 0.5;
+        var rx = px + 0.5, ry = py + 0.5;
+        for (var d = 0; d < radius * 2; d++) {
+          rx += dx; ry += dy;
+          var tx = Math.floor(rx), ty = Math.floor(ry);
+          if (tx < 0 || tx >= cfg.cols || ty < 0 || ty >= cfg.rows) break;
+          var dist = Math.sqrt((tx - px) * (tx - px) + (ty - py) * (ty - py));
+          if (dist > radius) break;
+          var light = 1 - (dist / radius);
+          light = light * light;
+          if (light > vis[ty][tx]) vis[ty][tx] = light;
+          if (map[ty][tx] === 1) break;
+        }
+      }
+      return vis;
+    }
+
     FA.addLayer('lighting', function() {
       var state = FA.getState();
       if (state.screen !== 'playing') return;
@@ -82,17 +110,19 @@
 
       var ctx = FA.getCtx();
       var p = state.player;
-      var cx = (p.x + 0.5) * ts;
-      var cy = (p.y + 0.5) * ts;
-      var lightRadius = (9 - (state.depth || 1)) * ts;
+      var lightRadius = 9 - (state.depth || 1) * 0.5;
+      var vis = computeFOV(state.map, p.x, p.y, lightRadius);
 
       ctx.save();
-      var grad = ctx.createRadialGradient(cx, cy, ts * 1.5, cx, cy, lightRadius);
-      grad.addColorStop(0, 'rgba(0,0,0,0)');
-      grad.addColorStop(0.6, 'rgba(0,0,0,0.4)');
-      grad.addColorStop(1, 'rgba(0,0,0,0.92)');
-      ctx.fillStyle = grad;
-      ctx.fillRect(0, 0, W, uiY);
+      ctx.fillStyle = '#000';
+      for (var y = 0; y < cfg.rows; y++) {
+        for (var x = 0; x < cfg.cols; x++) {
+          var dark = 1 - vis[y][x];
+          if (dark < 0.03) continue;
+          ctx.globalAlpha = Math.min(dark, 0.95);
+          ctx.fillRect(x * ts, y * ts, ts, ts);
+        }
+      }
       ctx.restore();
     }, 15);
 
