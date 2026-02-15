@@ -989,11 +989,16 @@
     };
   }
 
+  function dismissThought() {
+    FA.getState().thoughts = [];
+  }
+
   window.Game = {
     start: startGame,
     begin: beginPlaying,
     movePlayer: movePlayer,
     useModule: useModule,
-    dismissCutscene: dismissCutscene
+    dismissCutscene: dismissCutscene,
+    dismissThought: dismissThought
   };
 })();

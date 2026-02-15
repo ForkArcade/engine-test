@@ -42,6 +42,10 @@
 
     // Playing
     if (state.screen !== 'playing') return;
+    if (data.action === 'start' && state.thoughts && state.thoughts.length > 0) {
+      Game.dismissThought();
+      return;
+    }
     switch (data.action) {
       case 'up':    Game.movePlayer(0, -1); break;
       case 'down':  Game.movePlayer(0, 1);  break;

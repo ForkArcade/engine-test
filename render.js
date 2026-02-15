@@ -416,77 +416,103 @@
       FA.draw.popAlpha();
     }, 25);
 
-    // === DP-7 THOUGHT TERMINAL ===
+    // === DP-7 THOUGHT BUBBLE ===
     FA.addLayer('terminal', function() {
       var state = FA.getState();
       if (state.screen !== 'playing') return;
       if (!state.thoughts || state.thoughts.length === 0) return;
-      var ctx = FA.getCtx();
-      var tw = 230, tx = W - tw - 8, ty = 34;
 
-      // Collect visible thoughts
-      var visible = [];
-      for (var vi = 0; vi < state.thoughts.length; vi++) {
-        var vt = state.thoughts[vi];
-        if (vt.done && vt.life <= 0) continue;
-        visible.push(vt);
+      // Find latest active thought
+      var thought = null;
+      for (var ti = state.thoughts.length - 1; ti >= 0; ti--) {
+        var t = state.thoughts[ti];
+        if (!(t.done && t.life <= 0)) { thought = t; break; }
       }
-      if (visible.length === 0) return;
+      if (!thought) return;
 
-      var lineH = 18;
-      var th = visible.length * lineH + 22;
+      var ctx = FA.getCtx();
+      var p = state.player;
+      var px = p.x * ts + ts / 2;
+      var py = p.y * ts;
 
-      // Terminal background
+      // Bubble size based on full text
+      var chars = thought.done ? thought.text.length : Math.floor(thought.timer / thought.speed);
+      var text = thought.text.substring(0, Math.min(chars, thought.text.length));
+      var tw = Math.max(90, thought.text.length * 6.5 + 24);
+      var th = 26;
+      var bx = px - tw / 2;
+      var by = py - th - 14;
+
+      // Clamp to screen edges
+      if (bx < 4) bx = 4;
+      if (bx + tw > W - 4) bx = W - tw - 4;
+      var flipped = by < 4;
+      if (flipped) by = py + ts + 10;
+
+      // Fade alpha
+      var alpha = 1;
+      if (thought.done && thought.life < 1500) alpha = thought.life / 1500;
+
+      // Background
       ctx.save();
-      ctx.globalAlpha = 0.75;
+      ctx.globalAlpha = 0.82 * alpha;
       ctx.fillStyle = '#060a12';
-      ctx.fillRect(tx, ty, tw, th);
+      ctx.fillRect(bx, by, tw, th);
       ctx.restore();
 
       // Border
       ctx.save();
-      ctx.globalAlpha = 0.2;
+      ctx.globalAlpha = 0.3 * alpha;
       ctx.strokeStyle = '#4ef';
       ctx.lineWidth = 1;
-      ctx.strokeRect(tx + 0.5, ty + 0.5, tw - 1, th - 1);
+      ctx.strokeRect(bx + 0.5, by + 0.5, tw - 1, th - 1);
       ctx.restore();
 
-      // Header
+      // Connector line to player
       ctx.save();
-      ctx.globalAlpha = 0.25;
-      FA.draw.text('// DP-7', tx + 6, ty + 3, { color: '#4ef', size: 8 });
+      ctx.globalAlpha = 0.15 * alpha;
+      ctx.strokeStyle = '#4ef';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      if (!flipped) {
+        ctx.moveTo(px, by + th);
+        ctx.lineTo(px, py - 2);
+      } else {
+        ctx.moveTo(px, by);
+        ctx.lineTo(px, py + ts + 2);
+      }
+      ctx.stroke();
       ctx.restore();
 
-      // Thought lines
-      for (var i = 0; i < visible.length; i++) {
-        var thought = visible[i];
-        var chars = thought.done ? thought.text.length : Math.floor(thought.timer / thought.speed);
-        var text = thought.text.substring(0, Math.min(chars, thought.text.length));
-        var isLatest = i === visible.length - 1;
-        var alpha = isLatest ? 0.9 : 0.3;
-        if (thought.done && thought.life < 1500) alpha *= thought.life / 1500;
+      // Text
+      ctx.save();
+      ctx.globalAlpha = 0.9 * alpha;
+      FA.draw.text(text, bx + 8, by + 7, { color: '#4ef', size: 11 });
+      ctx.restore();
 
+      // Blinking cursor while typing
+      if (!thought.done && Math.floor(Date.now() / 350) % 2 === 0) {
         ctx.save();
-        ctx.globalAlpha = alpha;
-        FA.draw.text(text, tx + 8, ty + 15 + i * lineH, { color: '#4ef', size: 11 });
+        ctx.globalAlpha = 0.6;
+        ctx.fillStyle = '#4ef';
+        ctx.fillRect(bx + 8 + chars * 6.2, by + 7, 5, 12);
         ctx.restore();
+      }
 
-        // Blinking cursor on latest thought
-        if (isLatest && !thought.done && Math.floor(Date.now() / 350) % 2 === 0) {
-          ctx.save();
-          ctx.globalAlpha = 0.6;
-          ctx.fillStyle = '#4ef';
-          ctx.fillRect(tx + 8 + chars * 6.2, ty + 15 + i * lineH, 5, 12);
-          ctx.restore();
-        }
+      // [SPACE] dismiss hint after typing done
+      if (thought.done && thought.life > 1500) {
+        ctx.save();
+        ctx.globalAlpha = 0.2 * alpha;
+        FA.draw.text('[SPC]', bx + tw - 35, by + 9, { color: '#4ef', size: 8 });
+        ctx.restore();
       }
 
       // Scan lines
       ctx.save();
-      ctx.globalAlpha = 0.04;
+      ctx.globalAlpha = 0.04 * alpha;
       ctx.fillStyle = '#000';
-      for (var sl = ty; sl < ty + th; sl += 2) {
-        ctx.fillRect(tx, sl, tw, 1);
+      for (var sl = by; sl < by + th; sl += 2) {
+        ctx.fillRect(bx, sl, tw, 1);
       }
       ctx.restore();
     }, 26);
