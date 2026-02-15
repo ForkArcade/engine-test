@@ -56,12 +56,12 @@
 
       for (var i = 0; i < state.items.length; i++) {
         var item = state.items[i];
-        FA.draw.sprite('items', item.type, item.x * ts, item.y * ts, ts, item.char, item.color);
+        FA.draw.sprite('items', item.type, item.x * ts, item.y * ts, ts, item.char, item.color, 0);
       }
 
       for (var e = 0; e < state.enemies.length; e++) {
         var en = state.enemies[e];
-        FA.draw.sprite('enemies', 'rat', en.x * ts, en.y * ts, ts, en.char, en.color);
+        FA.draw.sprite('enemies', 'rat', en.x * ts, en.y * ts, ts, en.char, en.color, 0);
         var hpRatio = en.hp / en.maxHp;
         if (hpRatio < 1) {
           FA.draw.bar(en.x * ts + 2, en.y * ts - 3, ts - 4, 2, hpRatio, '#f44', '#400');
@@ -69,7 +69,7 @@
       }
 
       var p = state.player;
-      FA.draw.sprite('player', 'base', p.x * ts, p.y * ts, ts, '@', colors.player);
+      FA.draw.sprite('player', 'base', p.x * ts, p.y * ts, ts, '@', colors.player, 0);
     }, 10);
 
     // === FLOATING MESSAGES ===
