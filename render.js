@@ -11,6 +11,19 @@
     var H = cfg.canvasHeight;
     var uiY = cfg.rows * ts;
 
+    // Wall colors
+    var WALL_TOP = '#151030';
+    var WALL_FACE = '#2a2255';
+    var WALL_SIDE = '#1f1845';
+    var WALL_INNER = '#120e24';
+    var FLOOR_BASE = '#201c3a';
+    var FLOOR_ACCENT = '#262042';
+
+    function isOpen(map, x, y) {
+      if (x < 0 || x >= cfg.cols || y < 0 || y >= cfg.rows) return false;
+      return map[y][x] !== 1;
+    }
+
     // === START SCREEN ===
     FA.addLayer('startScreen', function() {
       var state = FA.getState();
@@ -27,24 +40,72 @@
       FA.draw.text('[ SPACE ]  to begin', W / 2, H / 2 + 130, { color: '#fff', size: 18, bold: true, align: 'center', baseline: 'middle' });
     }, 0);
 
-    // === MAP ===
+    // === MAP WITH WALL AUTOTILING ===
     FA.addLayer('map', function() {
       var state = FA.getState();
       if (state.screen !== 'playing' && state.screen !== 'victory' && state.screen !== 'death') return;
       if (!state.map) return;
+      var ctx = FA.getCtx();
+      var map = state.map;
+
       for (var y = 0; y < cfg.rows; y++) {
         for (var x = 0; x < cfg.cols; x++) {
-          var tile = state.map[y][x];
-          var color;
-          if (tile === 1) color = colors.wall;
-          else if (tile === 2) color = colors.stairsDown;
-          else if (tile === 3) color = colors.stairsUp;
-          else color = colors.floor;
-          FA.draw.rect(x * ts, y * ts, ts, ts, color);
-          if (tile === 2) {
-            FA.draw.text('>', x * ts + ts / 2, y * ts + ts / 2, { color: '#fff', size: 14, bold: true, align: 'center', baseline: 'middle' });
+          var tile = map[y][x];
+          var px = x * ts, py = y * ts;
+
+          if (tile === 0) {
+            // Floor tile with subtle checker pattern
+            ctx.fillStyle = (x + y) % 2 === 0 ? FLOOR_BASE : FLOOR_ACCENT;
+            ctx.fillRect(px, py, ts, ts);
+          } else if (tile === 2) {
+            // Stairs down
+            ctx.fillStyle = colors.stairsDown;
+            ctx.fillRect(px, py, ts, ts);
+            FA.draw.text('>', px + ts / 2, py + ts / 2, { color: '#fff', size: 14, bold: true, align: 'center', baseline: 'middle' });
           } else if (tile === 3) {
-            FA.draw.text('<', x * ts + ts / 2, y * ts + ts / 2, { color: '#fff', size: 14, bold: true, align: 'center', baseline: 'middle' });
+            // Stairs up
+            ctx.fillStyle = colors.stairsUp;
+            ctx.fillRect(px, py, ts, ts);
+            FA.draw.text('<', px + ts / 2, py + ts / 2, { color: '#fff', size: 14, bold: true, align: 'center', baseline: 'middle' });
+          } else {
+            // Wall — autotile based on neighbors
+            var openS = isOpen(map, x, y + 1);
+            var openN = isOpen(map, x, y - 1);
+            var openE = isOpen(map, x + 1, y);
+            var openW = isOpen(map, x - 1, y);
+
+            if (openS) {
+              // Front-facing wall (floor below) — 2-part: dark cap + lighter face
+              ctx.fillStyle = WALL_TOP;
+              ctx.fillRect(px, py, ts, Math.floor(ts * 0.4));
+              ctx.fillStyle = WALL_FACE;
+              ctx.fillRect(px, py + Math.floor(ts * 0.4), ts, ts - Math.floor(ts * 0.4));
+              // Bottom edge highlight
+              ctx.fillStyle = '#3a3070';
+              ctx.fillRect(px, py + ts - 1, ts, 1);
+            } else if (openN) {
+              // Back wall (floor above) — single accent at top
+              ctx.fillStyle = WALL_INNER;
+              ctx.fillRect(px, py, ts, ts);
+              ctx.fillStyle = WALL_SIDE;
+              ctx.fillRect(px, py, ts, 2);
+            } else if (openE || openW) {
+              // Side wall — vertical accent
+              ctx.fillStyle = WALL_INNER;
+              ctx.fillRect(px, py, ts, ts);
+              if (openE) {
+                ctx.fillStyle = WALL_SIDE;
+                ctx.fillRect(px + ts - 2, py, 2, ts);
+              }
+              if (openW) {
+                ctx.fillStyle = WALL_SIDE;
+                ctx.fillRect(px, py, 2, ts);
+              }
+            } else {
+              // Interior wall — fully dark
+              ctx.fillStyle = WALL_INNER;
+              ctx.fillRect(px, py, ts, ts);
+            }
           }
         }
       }
@@ -74,7 +135,7 @@
       FA.draw.sprite('player', 'base', p.x * ts, p.y * ts, ts, '@', colors.player, 0);
     }, 10);
 
-    // === SHADOWCAST LIGHTING ===
+    // === SHADOWCAST LIGHTING + EXPLORED MEMORY ===
     function computeFOV(map, px, py, radius) {
       var vis = [];
       for (var y = 0; y < cfg.rows; y++) {
@@ -112,15 +173,31 @@
       var p = state.player;
       var lightRadius = 9 - (state.depth || 1) * 0.5;
       var vis = computeFOV(state.map, p.x, p.y, lightRadius);
+      var explored = state.explored;
+
+      // Mark visible tiles as explored
+      for (var y = 0; y < cfg.rows; y++) {
+        for (var x = 0; x < cfg.cols; x++) {
+          if (vis[y][x] > 0.05) explored[y][x] = true;
+        }
+      }
 
       ctx.save();
       ctx.fillStyle = '#000';
-      for (var y = 0; y < cfg.rows; y++) {
-        for (var x = 0; x < cfg.cols; x++) {
-          var dark = 1 - vis[y][x];
-          if (dark < 0.03) continue;
-          ctx.globalAlpha = Math.min(dark, 0.95);
-          ctx.fillRect(x * ts, y * ts, ts, ts);
+      for (var y2 = 0; y2 < cfg.rows; y2++) {
+        for (var x2 = 0; x2 < cfg.cols; x2++) {
+          if (vis[y2][x2] > 0.03) {
+            // Currently visible — shadow based on light level
+            var dark = 1 - vis[y2][x2];
+            ctx.globalAlpha = Math.min(dark, 0.92);
+          } else if (explored[y2][x2]) {
+            // Explored but not visible — dim memory
+            ctx.globalAlpha = 0.75;
+          } else {
+            // Never seen — full darkness
+            ctx.globalAlpha = 0.97;
+          }
+          ctx.fillRect(x2 * ts, y2 * ts, ts, ts);
         }
       }
       ctx.restore();

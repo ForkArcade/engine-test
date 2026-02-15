@@ -101,7 +101,13 @@
       stairsUp = { x: sux, y: suy };
     }
 
-    return { map: map, rooms: rooms, stairsDown: stairsDown, stairsUp: stairsUp };
+    var explored = [];
+    for (var ey = 0; ey < rows; ey++) {
+      explored[ey] = [];
+      for (var ex = 0; ex < cols; ex++) explored[ey][ex] = false;
+    }
+
+    return { map: map, rooms: rooms, stairsDown: stairsDown, stairsUp: stairsUp, explored: explored };
   }
 
   function findEmptyInRooms(map, rooms, occupied) {
@@ -189,12 +195,14 @@
     floors[1] = {
       map: floor.map, rooms: floor.rooms,
       enemies: populated.enemies, items: populated.items,
-      stairsDown: floor.stairsDown, stairsUp: floor.stairsUp
+      stairsDown: floor.stairsDown, stairsUp: floor.stairsUp,
+      explored: floor.explored
     };
 
     FA.resetState({
       screen: 'playing',
       map: floor.map,
+      explored: floor.explored,
       player: { x: px, y: py, hp: 20, maxHp: 20, atk: 5, def: 1, gold: 0, kills: 0 },
       enemies: populated.enemies,
       items: populated.items,
@@ -223,6 +231,7 @@
     // Save current floor
     state.floors[oldDepth].enemies = state.enemies;
     state.floors[oldDepth].items = state.items;
+    state.floors[oldDepth].explored = state.explored;
 
     // Generate or load target floor
     if (!state.floors[newDepth]) {
@@ -231,7 +240,8 @@
       state.floors[newDepth] = {
         map: floor.map, rooms: floor.rooms,
         enemies: populated.enemies, items: populated.items,
-        stairsDown: floor.stairsDown, stairsUp: floor.stairsUp
+        stairsDown: floor.stairsDown, stairsUp: floor.stairsUp,
+        explored: floor.explored
       };
     }
 
@@ -239,6 +249,7 @@
     state.map = target.map;
     state.enemies = target.enemies;
     state.items = target.items;
+    state.explored = target.explored;
     state.depth = newDepth;
     if (newDepth > state.maxDepthReached) state.maxDepthReached = newDepth;
 
