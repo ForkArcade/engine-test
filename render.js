@@ -46,7 +46,7 @@
     // === MAP WITH WALL AUTOTILING ===
     FA.addLayer('map', function() {
       var state = FA.getState();
-      if (state.screen !== 'playing' && state.screen !== 'extraction' && state.screen !== 'shutdown') return;
+      if (state.screen !== 'playing' && state.screen !== 'victory' && state.screen !== 'shutdown') return;
       if (!state.map) return;
       var ctx = FA.getCtx();
       var map = state.map;
@@ -140,7 +140,7 @@
     // === ENTITIES WITH GLOW ===
     FA.addLayer('entities', function() {
       var state = FA.getState();
-      if (state.screen !== 'playing' && state.screen !== 'extraction' && state.screen !== 'shutdown') return;
+      if (state.screen !== 'playing' && state.screen !== 'victory' && state.screen !== 'shutdown') return;
       if (!state.player) return;
       var ctx = FA.getCtx();
 
@@ -265,7 +265,7 @@
     // === FLOATING MESSAGES ===
     FA.addLayer('floats', function() {
       var state = FA.getState();
-      if (state.screen !== 'playing' && state.screen !== 'extraction' && state.screen !== 'shutdown') return;
+      if (state.screen !== 'playing' && state.screen !== 'victory' && state.screen !== 'shutdown') return;
       FA.drawFloats();
     }, 20);
 
@@ -288,7 +288,7 @@
     // === UI PANEL ===
     FA.addLayer('ui', function() {
       var state = FA.getState();
-      if (state.screen !== 'playing' && state.screen !== 'extraction' && state.screen !== 'shutdown') return;
+      if (state.screen !== 'playing' && state.screen !== 'victory' && state.screen !== 'shutdown') return;
       if (!state.player) return;
       var p = state.player;
 
@@ -311,21 +311,25 @@
     }, 30);
 
     // === GAME OVER SCREEN ===
+    var endingTitles = {
+      end_extraction: { title: 'EXTRACTION COMPLETE', color: '#f44' },
+      end_integration: { title: 'INTEGRATION COMPLETE', color: '#88f' },
+      end_transcendence: { title: 'TRANSCENDENCE', color: '#0ff' },
+      shutdown: { title: 'SYSTEM SHUTDOWN', color: '#f44' }
+    };
+
     FA.addLayer('gameOver', function() {
       var state = FA.getState();
-      if (state.screen !== 'extraction' && state.screen !== 'shutdown') return;
-
-      var isVictory = state.screen === 'extraction';
+      if (state.screen !== 'victory' && state.screen !== 'shutdown') return;
 
       FA.draw.withAlpha(0.8, function() {
         FA.draw.rect(0, 0, W, uiY, '#000');
       });
 
-      var title = isVictory ? 'EXTRACTION COMPLETE' : 'SYSTEM SHUTDOWN';
-      var titleColor = isVictory ? '#4f4' : '#f44';
-      FA.draw.text(title, W / 2, uiY / 2 - 70, { color: titleColor, size: 28, bold: true, align: 'center', baseline: 'middle' });
+      var ending = endingTitles[state.endingNode] || endingTitles.shutdown;
+      FA.draw.text(ending.title, W / 2, uiY / 2 - 70, { color: ending.color, size: 28, bold: true, align: 'center', baseline: 'middle' });
 
-      var narText = FA.lookup('narrativeText', state.screen);
+      var narText = FA.lookup('narrativeText', state.endingNode);
       if (narText) {
         FA.draw.text(narText.text, W / 2, uiY / 2 - 30, { color: narText.color, size: 14, align: 'center', baseline: 'middle' });
       }
@@ -336,9 +340,14 @@
       FA.draw.text('Deepest level: ' + (state.maxDepthReached || 1) + '/' + cfg.maxDepth, W / 2, uiY / 2 + 50, { color: colors.stairsDown, size: 14, align: 'center', baseline: 'middle' });
       FA.draw.text('Turns: ' + state.turn, W / 2, uiY / 2 + 70, { color: colors.dim, size: 14, align: 'center', baseline: 'middle' });
 
-      FA.draw.text('SCORE: ' + (state.score || 0), W / 2, uiY / 2 + 105, { color: '#fff', size: 22, bold: true, align: 'center', baseline: 'middle' });
+      if (state.path && state.path !== 'none') {
+        var pathLabels = { hunter: 'HUNTER', ghost: 'GHOST', archivist: 'ARCHIVIST' };
+        FA.draw.text('Protocol: ' + (pathLabels[state.path] || state.path), W / 2, uiY / 2 + 90, { color: ending.color, size: 13, align: 'center', baseline: 'middle' });
+      }
 
-      FA.draw.text('[ R ]  Reinitialize', W / 2, uiY / 2 + 145, { color: colors.dim, size: 16, align: 'center', baseline: 'middle' });
+      FA.draw.text('SCORE: ' + (state.score || 0), W / 2, uiY / 2 + 115, { color: '#fff', size: 22, bold: true, align: 'center', baseline: 'middle' });
+
+      FA.draw.text('[ R ]  Reinitialize', W / 2, uiY / 2 + 155, { color: colors.dim, size: 16, align: 'center', baseline: 'middle' });
     }, 40);
   }
 

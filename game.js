@@ -1,4 +1,4 @@
-// Roguelike — Game Logic
+// Deep Protocol — Game Logic
 (function() {
   'use strict';
   var FA = window.FA;
@@ -81,7 +81,6 @@
       carveCorridor(map, 4, 4, cols - 6, rows - 6);
     }
 
-    // Stairs down in last room (except on final floor)
     var stairsDown = null;
     if (depth < maxDepth) {
       var lastRoom = rooms[rooms.length - 1];
@@ -91,7 +90,6 @@
       stairsDown = { x: sdx, y: sdy };
     }
 
-    // Stairs up in first room (except on floor 1)
     var stairsUp = null;
     if (depth > 1) {
       var firstRoom = rooms[0];
@@ -209,6 +207,8 @@
       depth: 1,
       maxDepthReached: 1,
       floors: floors,
+      path: 'none',
+      endingNode: null,
       messages: [],
       narrativeMessage: null,
       turn: 0
@@ -220,6 +220,57 @@
     showNarrative('boot');
   }
 
+  // === PATH DETECTION ===
+
+  function checkPath(state) {
+    if (state.path !== 'none') return;
+    var p = state.player;
+
+    // Ghost: reached depth 3+ with very few kills
+    if (state.depth >= 3 && p.kills <= 2) {
+      state.path = 'ghost';
+      showNarrative('path_ghost');
+      FA.narrative.setVar('path', 'ghost', 'Ghost protocol engaged');
+      return;
+    }
+    // Hunter: 5+ kills
+    if (p.kills >= 5) {
+      state.path = 'hunter';
+      showNarrative('path_hunter');
+      FA.narrative.setVar('path', 'hunter', 'Hunter protocol engaged');
+      return;
+    }
+    // Archivist: 60+ data collected
+    if (p.gold >= 60) {
+      state.path = 'archivist';
+      showNarrative('path_archivist');
+      FA.narrative.setVar('path', 'archivist', 'Archivist protocol engaged');
+      return;
+    }
+  }
+
+  function checkClimax(state) {
+    if (state.climaxShown) return;
+    var p = state.player;
+
+    if (state.path === 'hunter' && p.kills >= 15) {
+      state.climaxShown = true;
+      showNarrative('hunter_climax');
+    } else if (state.path === 'ghost' && state.depth >= 4 && p.kills <= 4) {
+      state.climaxShown = true;
+      showNarrative('ghost_climax');
+    } else if (state.path === 'archivist' && p.gold >= 120) {
+      state.climaxShown = true;
+      showNarrative('archivist_climax');
+    }
+  }
+
+  function chooseEnding(state) {
+    if (state.path === 'ghost') return 'end_integration';
+    if (state.path === 'archivist') return 'end_transcendence';
+    return 'end_extraction';
+  }
+
   // === FLOOR TRANSITION ===
 
   function changeFloor(direction) {
@@ -228,12 +279,10 @@
     var oldDepth = state.depth;
     var newDepth = direction === 'down' ? oldDepth + 1 : oldDepth - 1;
 
-    // Save current floor
     state.floors[oldDepth].enemies = state.enemies;
     state.floors[oldDepth].items = state.items;
     state.floors[oldDepth].explored = state.explored;
 
-    // Generate or load target floor
     if (!state.floors[newDepth]) {
       var floor = generateFloor(cfg.cols, cfg.rows, newDepth, cfg.maxDepth);
       var populated = populateFloor(floor.map, floor.rooms, newDepth);
@@ -253,7 +302,6 @@
     state.depth = newDepth;
     if (newDepth > state.maxDepthReached) state.maxDepthReached = newDepth;
 
-    // Place player at arrival stairs
     if (direction === 'down' && target.stairsUp) {
       state.player.x = target.stairsUp.x;
       state.player.y = target.stairsUp.y;
@@ -269,9 +317,12 @@
     if (direction === 'down' && newDepth === 2) showNarrative('descent');
     if (direction === 'down' && newDepth === 4) showNarrative('core_sector');
     if (direction === 'down' && newDepth === 5) showNarrative('director');
+
+    checkPath(state);
+    checkClimax(state);
   }
 
-  // === NARRATIVE IN-GAME ===
+  // === NARRATIVE ===
 
   function showNarrative(nodeId) {
     FA.narrative.transition(nodeId);
@@ -290,7 +341,6 @@
     var nx = state.player.x + dx;
     var ny = state.player.y + dy;
 
-    // Combat check
     for (var i = 0; i < state.enemies.length; i++) {
       if (state.enemies[i].x === nx && state.enemies[i].y === ny) {
         attackEnemy(state.player, state.enemies[i], i);
@@ -304,12 +354,10 @@
     state.player.y = ny;
     FA.playSound('step');
 
-    // Stairs check
     var tile = state.map[ny][nx];
     if (tile === 2) { changeFloor('down'); return; }
     if (tile === 3) { changeFloor('up'); return; }
 
-    // Item pickup
     for (var j = state.items.length - 1; j >= 0; j--) {
       if (state.items[j].x === nx && state.items[j].y === ny) {
         pickupItem(state.items[j], j);
@@ -333,21 +381,20 @@
       state.enemies.splice(idx, 1);
       state.player.kills++;
       FA.emit('entity:killed', { entity: target });
-      addMessage(target.name + ' defeated!');
+      addMessage(target.name + ' destroyed.');
       FA.narrative.setVar('drones_destroyed', state.player.kills, 'Destroyed ' + target.name);
 
       if (state.player.kills === 1) showNarrative('first_contact');
-      else if (state.player.kills === 3) showNarrative('hunter');
 
-      // Current floor cleared
-      if (state.enemies.length === 0) {
-        showNarrative('floor_clear');
-      }
+      if (state.enemies.length === 0) showNarrative('floor_clear');
 
-      // Victory: cleared all floors
+      checkPath(state);
+      checkClimax(state);
+
       if (allFloorsCleared(state)) {
-        showNarrative('extraction');
-        endGame(true);
+        var ending = chooseEnding(state);
+        showNarrative(ending);
+        endGame(true, ending);
       }
     }
   }
@@ -372,10 +419,12 @@
       addMessage('+' + item.value + ' data');
       FA.narrative.setVar('cores_found', state.player.gold, 'Recovered data core');
       if (wasZero) showNarrative('first_core');
+      checkPath(state);
+      checkClimax(state);
     } else if (item.type === 'potion') {
       var heal = Math.min(item.healAmount, state.player.maxHp - state.player.hp);
       state.player.hp += heal;
-      addMessage('+' + heal + ' HP');
+      addMessage('+' + heal + ' hull repaired');
     }
   }
 
@@ -403,7 +452,7 @@
 
         if (state.player.hp <= 0) {
           showNarrative('shutdown');
-          endGame(false);
+          endGame(false, 'shutdown');
           return;
         }
         if (!state.damagedShown && state.player.hp <= state.player.maxHp * 0.3) {
@@ -434,9 +483,10 @@
     enemyTurn();
   }
 
-  function endGame(victory) {
+  function endGame(victory, endingNode) {
     var state = FA.getState();
-    state.screen = victory ? 'extraction' : 'shutdown';
+    state.screen = victory ? 'victory' : 'shutdown';
+    state.endingNode = endingNode;
     var scoring = FA.lookup('config', 'scoring');
     state.score = (state.player.kills * scoring.killMultiplier) +
                   (state.player.gold * scoring.goldMultiplier) +

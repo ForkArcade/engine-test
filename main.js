@@ -26,7 +26,7 @@
     }
 
     // Game over screens
-    if ((state.screen === 'extraction' || state.screen === 'shutdown') && data.action === 'restart') {
+    if ((state.screen === 'victory' || state.screen === 'shutdown') && data.action === 'restart') {
       Game.start();
       return;
     }
