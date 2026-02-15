@@ -318,6 +318,68 @@
       ctx.restore();
     }, 15);
 
+    // === DYNAMIC EFFECTS ===
+    FA.addLayer('effects', function() {
+      var state = FA.getState();
+      if (state.screen !== 'playing') return;
+      var ctx = FA.getCtx();
+      var depth = state.depth || 1;
+
+      // Facility alert level (hunting enemies = system awareness)
+      var huntingCount = 0;
+      for (var hi = 0; hi < state.enemies.length; hi++) {
+        if (state.enemies[hi].aiState === 'hunting') huntingCount++;
+      }
+      var alertLevel = huntingCount / Math.max(1, state.enemies.length);
+
+      // Red tint when facility is aware
+      if (alertLevel > 0) {
+        ctx.save();
+        ctx.globalAlpha = alertLevel * 0.06;
+        ctx.fillStyle = '#f00';
+        ctx.fillRect(0, 0, W, uiY);
+        ctx.restore();
+      }
+
+      // Depth corruption — glitch bars intensify deeper
+      if (Math.random() < 0.002 * depth) {
+        ctx.save();
+        ctx.globalAlpha = 0.06 + Math.random() * 0.06;
+        ctx.fillStyle = ['#f00', '#0ff', '#f0f', '#ff0'][Math.floor(Math.random() * 4)];
+        ctx.fillRect(0, Math.random() * uiY, W, 1 + Math.random() * 2);
+        ctx.restore();
+      }
+
+      // Sound wave rings
+      if (state.soundWaves) {
+        for (var wi = 0; wi < state.soundWaves.length; wi++) {
+          var wave = state.soundWaves[wi];
+          var progress = 1 - wave.life / 500;
+          var waveR = progress * wave.maxR * ts;
+          ctx.save();
+          ctx.globalAlpha = (1 - progress) * 0.15;
+          ctx.strokeStyle = '#ff0';
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.arc(wave.tx * ts + ts / 2, wave.ty * ts + ts / 2, waveR, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.restore();
+        }
+      }
+
+      // Kill burst particles
+      if (state.particles) {
+        for (var pi = 0; pi < state.particles.length; pi++) {
+          var pt = state.particles[pi];
+          ctx.save();
+          ctx.globalAlpha = pt.life / pt.maxLife;
+          ctx.fillStyle = pt.color;
+          ctx.fillRect(pt.x - 1, pt.y - 1, 3, 3);
+          ctx.restore();
+        }
+      }
+    }, 18);
+
     // === FLOATING MESSAGES ===
     FA.addLayer('floats', function() {
       var state = FA.getState();
@@ -386,10 +448,11 @@
       // Line 3: Stats
       FA.draw.text('Data:' + p.gold + '  Kills:' + p.kills + '  Turn:' + state.turn, 8, uiY + 36, { color: colors.dim, size: 11 });
 
-      // Messages
+      // Messages (color-coded)
       var msgs = state.messages;
       for (var i = 0; i < msgs.length; i++) {
-        FA.draw.text(msgs[i], 8, uiY + 50 + i * 12, { color: colors.dim, size: 10 });
+        var msg = msgs[i];
+        FA.draw.text(msg.text || msg, 8, uiY + 50 + i * 10, { color: msg.color || colors.dim, size: 10 });
       }
     }, 30);
 

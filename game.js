@@ -257,7 +257,8 @@
       terminalsHacked: 0,
       messages: [],
       narrativeMessage: null,
-      turn: 0
+      turn: 0,
+      shake: 0, particles: [], soundWaves: []
     });
 
     FA.clearEffects();
@@ -541,6 +542,7 @@
     }
 
     state.player.hp -= dmg;
+    state.shake = 6;
     FA.emit('entity:damaged', { entity: state.player, damage: dmg });
 
     var cfg = FA.lookup('config', 'game');
@@ -638,6 +640,16 @@
       state.enemies.splice(idx, 1);
       state.player.kills++;
       FA.emit('entity:killed', { entity: target });
+      var bx = target.x * ts + ts / 2, by = target.y * ts + ts / 2;
+      for (var pi = 0; pi < 8; pi++) {
+        var angle = (pi / 8) * Math.PI * 2 + Math.random() * 0.5;
+        state.particles.push({
+          x: bx, y: by,
+          vx: Math.cos(angle) * (40 + Math.random() * 30),
+          vy: Math.sin(angle) * (40 + Math.random() * 30),
+          life: 500, maxLife: 500, color: target.color
+        });
+      }
       addMessage(target.name + ' destroyed.');
       FA.narrative.setVar('drones_destroyed', state.player.kills, 'Destroyed ' + target.name);
 
@@ -789,6 +801,7 @@
         e.alertTimer = 8;
       }
     }
+    if (state.soundWaves) state.soundWaves.push({ tx: x, ty: y, maxR: radius, life: 500 });
   }
 
   function computeEnemyAction(e, state) {
@@ -917,9 +930,16 @@
   }
 
   function addMessage(text) {
+    var color = '#556';
+    if (text.indexOf('> HACK') === 0) color = '#0ff';
+    else if (text.indexOf('OVERCLOCK STRIKE') >= 0) color = '#f80';
+    else if (text.indexOf('destroyed') >= 0 || text.indexOf('deals') >= 0 || text.indexOf('damage') >= 0 || text.indexOf('absorbs') >= 0) color = '#f44';
+    else if (text.charAt(0) === '+') color = '#4f4';
+    else if (text.indexOf('MODULE') >= 0 || text.indexOf('Module') >= 0) color = '#ff0';
+    else if (text.charAt(0) === '>') color = '#8af';
     var msgs = FA.getState().messages;
-    msgs.push(text);
-    if (msgs.length > 5) msgs.shift();
+    msgs.push({ text: text, color: color });
+    if (msgs.length > 6) msgs.shift();
   }
 
   window.Game = {

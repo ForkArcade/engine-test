@@ -76,11 +76,41 @@
         state.cutscene.done = true;
       }
     }
+    // Screen shake decay
+    if (state.shake > 0) {
+      state.shakeX = (Math.random() - 0.5) * state.shake;
+      state.shakeY = (Math.random() - 0.5) * state.shake;
+      state.shake -= dt * 0.012;
+      if (state.shake < 0) { state.shake = 0; state.shakeX = 0; state.shakeY = 0; }
+    }
+    // Kill particles
+    if (state.particles) {
+      for (var pi = state.particles.length - 1; pi >= 0; pi--) {
+        var pt = state.particles[pi];
+        pt.x += pt.vx * dt / 1000;
+        pt.y += pt.vy * dt / 1000;
+        pt.vx *= 0.97; pt.vy *= 0.97;
+        pt.life -= dt;
+        if (pt.life <= 0) state.particles.splice(pi, 1);
+      }
+    }
+    // Sound waves
+    if (state.soundWaves) {
+      for (var wi = state.soundWaves.length - 1; wi >= 0; wi--) {
+        state.soundWaves[wi].life -= dt;
+        if (state.soundWaves[wi].life <= 0) state.soundWaves.splice(wi, 1);
+      }
+    }
   });
 
   FA.setRender(function() {
     FA.draw.clear(colors.bg);
+    var state = FA.getState();
+    var ctx = FA.getCtx();
+    var sx = state.shakeX || 0, sy = state.shakeY || 0;
+    if (sx || sy) ctx.translate(sx, sy);
     FA.renderLayers();
+    if (sx || sy) ctx.translate(-sx, -sy);
   });
 
   // Start
