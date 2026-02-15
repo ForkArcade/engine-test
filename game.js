@@ -373,6 +373,42 @@
       FA.getState().narrativeMessage = { text: narText.text, color: narText.color, life: 4000, maxLife: 4000 };
       addMessage(narText.text);
     }
+
+    // Full-screen cutscene if defined
+    var cutscene = FA.lookup('cutscenes', nodeId);
+    var state = FA.getState();
+    if (cutscene && state.screen !== 'cutscene') {
+      startCutscene(cutscene, state);
+    }
+  }
+
+  function startCutscene(def, state) {
+    var totalChars = 0;
+    for (var i = 0; i < def.lines.length; i++) {
+      totalChars += def.lines[i].length + 4;
+    }
+    state.cutsceneReturn = state.screen;
+    state.screen = 'cutscene';
+    state.cutscene = {
+      lines: def.lines,
+      color: def.color || '#4ef',
+      speed: def.speed || 35,
+      totalChars: totalChars,
+      timer: 0,
+      done: false
+    };
+  }
+
+  function dismissCutscene() {
+    var state = FA.getState();
+    if (!state.cutscene) return;
+    if (!state.cutscene.done) {
+      state.cutscene.timer = state.cutscene.totalChars * state.cutscene.speed;
+      state.cutscene.done = true;
+      return;
+    }
+    state.screen = state.cutsceneReturn || 'playing';
+    state.cutscene = null;
   }
 
   // === MODULES ===
@@ -739,6 +775,7 @@
     start: startGame,
     begin: beginPlaying,
     movePlayer: movePlayer,
-    useModule: useModule
+    useModule: useModule,
+    dismissCutscene: dismissCutscene
   };
 })();

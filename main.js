@@ -28,6 +28,12 @@
       return;
     }
 
+    // Cutscene — Space to skip/dismiss
+    if (state.screen === 'cutscene' && data.action === 'start') {
+      Game.dismissCutscene();
+      return;
+    }
+
     // Game over screens
     if ((state.screen === 'victory' || state.screen === 'shutdown') && data.action === 'restart') {
       Game.start();
@@ -62,6 +68,13 @@
     var state = FA.getState();
     if (state.narrativeMessage && state.narrativeMessage.life > 0) {
       state.narrativeMessage.life -= dt;
+    }
+    // Cutscene typewriter
+    if (state.screen === 'cutscene' && state.cutscene && !state.cutscene.done) {
+      state.cutscene.timer += dt;
+      if (state.cutscene.timer >= state.cutscene.totalChars * state.cutscene.speed) {
+        state.cutscene.done = true;
+      }
     }
   });
 

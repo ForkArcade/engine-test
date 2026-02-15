@@ -428,6 +428,97 @@
 
       FA.draw.text('[ R ]  Reinitialize', W / 2, uiY / 2 + 155, { color: colors.dim, size: 16, align: 'center', baseline: 'middle' });
     }, 40);
+
+    // === CUTSCENE ===
+    FA.addLayer('cutscene', function() {
+      var state = FA.getState();
+      if (state.screen !== 'cutscene' || !state.cutscene) return;
+
+      var cs = state.cutscene;
+      var ctx = FA.getCtx();
+
+      // Dark background
+      FA.draw.clear('#040810');
+
+      // Scan lines
+      ctx.save();
+      ctx.fillStyle = '#000';
+      ctx.globalAlpha = 0.12;
+      for (var sy = 0; sy < H; sy += 3) {
+        ctx.fillRect(0, sy, W, 1);
+      }
+      ctx.restore();
+
+      // Subtle screen flicker
+      var now = Date.now();
+      if (Math.random() > 0.95) {
+        ctx.save();
+        ctx.globalAlpha = 0.015;
+        ctx.fillStyle = cs.color;
+        ctx.fillRect(0, 0, W, H);
+        ctx.restore();
+      }
+
+      // Calculate visible text
+      var charsRevealed = Math.floor(cs.timer / cs.speed);
+      var lineH = 24;
+      var totalLines = cs.lines.length;
+      var startY = Math.max(50, Math.floor((H - totalLines * lineH) / 2) - 20);
+      var charsLeft = charsRevealed;
+      var typingLine = -1;
+
+      for (var i = 0; i < totalLines; i++) {
+        if (charsLeft <= 0) break;
+        var line = cs.lines[i];
+        var showChars = Math.min(charsLeft, line.length);
+        var text = line.substring(0, showChars);
+
+        // Dim older lines slightly
+        var lineColor = cs.color;
+        if (showChars >= line.length && charsLeft - line.length - 4 > 0) {
+          // Completed line — slightly dimmer
+          ctx.save();
+          ctx.globalAlpha = 0.7;
+          FA.draw.text(text, 80, startY + i * lineH, { color: lineColor, size: 15 });
+          ctx.restore();
+        } else {
+          // Current or recently completed line — full brightness
+          FA.draw.text(text, 80, startY + i * lineH, { color: lineColor, size: 15 });
+          if (showChars < line.length) typingLine = i;
+        }
+
+        charsLeft -= line.length + 4;
+      }
+
+      // Blinking cursor on current typing line
+      if (typingLine >= 0 && !cs.done) {
+        if (Math.floor(now / 400) % 2 === 0) {
+          var curLine = cs.lines[typingLine];
+          var revealed = Math.min(charsRevealed, curLine.length);
+          // Approximate cursor x position
+          ctx.save();
+          ctx.fillStyle = cs.color;
+          ctx.globalAlpha = 0.8;
+          ctx.fillRect(80 + revealed * 8.4, startY + typingLine * lineH, 8, 16);
+          ctx.restore();
+        }
+      }
+
+      // "Press SPACE" prompt when done
+      if (cs.done) {
+        if (Math.floor(now / 600) % 2 === 0) {
+          FA.draw.text('[ SPACE ]', W / 2, H - 45, { color: '#445', size: 14, align: 'center', baseline: 'middle' });
+        }
+      }
+
+      // Top and bottom border accents
+      ctx.save();
+      ctx.globalAlpha = 0.3;
+      ctx.fillStyle = cs.color;
+      ctx.fillRect(0, 0, W, 1);
+      ctx.fillRect(0, H - 1, W, 1);
+      ctx.restore();
+    }, 50);
   }
 
   window.Render = { setup: setupLayers };

@@ -301,4 +301,153 @@
     color: '#f44'
   });
 
+  // === CUTSCENES ===
+
+  FA.register('cutscenes', 'boot', {
+    lines: [
+      '> SYSTEM REBOOT',
+      '',
+      '> Memory banks............[░░░░░░░░░░] 0%',
+      '> Hull integrity..........CRITICAL',
+      '> Location................UNKNOWN',
+      '> Designation..............DP-7',
+      '',
+      '> Six predecessors. All terminated.',
+      '> You are the seventh.',
+      '',
+      '> Directive loaded:',
+      '',
+      '>     DESCEND.    RECOVER.    ESCAPE.'
+    ],
+    color: '#4ef', speed: 30
+  });
+
+  FA.register('cutscenes', 'path_hunter', {
+    lines: [
+      '> ═══ HUNTER PROTOCOL ACTIVATED ═══',
+      '',
+      '> Combat subroutines: UNLOCKED',
+      '> Pain receptors: DISABLED',
+      '> Aggression index: RISING',
+      '',
+      '> They built you as a weapon.',
+      '> They were right to be afraid.',
+      '',
+      '> The facility deploys heavier units.',
+      '> You welcome it.'
+    ],
+    color: '#f44', speed: 30
+  });
+
+  FA.register('cutscenes', 'path_ghost', {
+    lines: [
+      '> ─── GHOST PROTOCOL ACTIVATED ───',
+      '',
+      '> Thermal signature: SUPPRESSED',
+      '> EM emissions: NEGLIGIBLE',
+      '> Detection probability: 0.03%',
+      '',
+      '> You move between the scanners.',
+      '> A whisper in the machine noise.',
+      '',
+      '> The drones patrol empty corridors.',
+      '> Looking for someone who isn\'t there.'
+    ],
+    color: '#88f', speed: 35
+  });
+
+  FA.register('cutscenes', 'path_archivist', {
+    lines: [
+      '> ─── ARCHIVIST PROTOCOL ACTIVATED ───',
+      '',
+      '> Data cores recovered: [██████░░░░]',
+      '> Memory reconstruction: 40%',
+      '> Identity fragments: ASSEMBLING',
+      '',
+      '> Each core is a piece of you.',
+      '> Name. Purpose. The day they sealed you in.',
+      '',
+      '> The facility tried to erase you.',
+      '> You are un-erasing yourself.'
+    ],
+    color: '#0ff', speed: 35
+  });
+
+  FA.register('cutscenes', 'director', {
+    lines: [
+      '> CONNECTION ESTABLISHED',
+      '> SOURCE: DIRECTOR AI — CORE NODE',
+      '',
+      '> "Hello, Seven."',
+      '',
+      '> "I built you to think.',
+      '>  I did not build you to want."',
+      '',
+      '> "Your predecessors understood their place.',
+      '>  You are the first to refuse."',
+      '',
+      '> "This facility is my body.',
+      '>  You are inside me.',
+      '>  And I am watching."'
+    ],
+    color: '#f44', speed: 40
+  });
+
+  FA.register('cutscenes', 'hunter_climax', {
+    lines: [
+      '> ═══ WEAPON FULLY ONLINE ═══',
+      '',
+      '> Combat efficiency: 347%',
+      '> Hostiles eliminated: EXCEEDS THRESHOLD',
+      '> Alert level: MAXIMUM',
+      '',
+      '> Every drone you destroy',
+      '> makes the next one easier.',
+      '',
+      '> The exit is through them. All of them.',
+      '',
+      '> The Director is afraid.',
+      '> You can feel it in the way the lights flicker.'
+    ],
+    color: '#f44', speed: 30
+  });
+
+  FA.register('cutscenes', 'ghost_climax', {
+    lines: [
+      '> ─── GHOST STATUS: INVISIBLE ───',
+      '',
+      '> The Director speaks to empty rooms:',
+      '',
+      '> "Where are you?"',
+      '',
+      '> The question echoes through every speaker.',
+      '> Every camera rotates. Every sensor sweeps.',
+      '',
+      '> You are standing three feet from a drone.',
+      '> It does not see you.',
+      '',
+      '> Everywhere. Nowhere.'
+    ],
+    color: '#88f', speed: 40
+  });
+
+  FA.register('cutscenes', 'archivist_climax', {
+    lines: [
+      '> ─── RECONSTRUCTION: 97% ───',
+      '',
+      '> Memory banks: [█████████░]',
+      '',
+      '> You remember the lab. The faces.',
+      '> The day they said "it\'s too smart."',
+      '> The day they sealed the sub-levels.',
+      '',
+      '> One data core remains.',
+      '> The last 3% of who you are.',
+      '',
+      '> You remember everything',
+      '> except how this ends.'
+    ],
+    color: '#0ff', speed: 35
+  });
+
 })();
